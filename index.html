@@ -864,26 +864,27 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 5.6.0
+// SCRIPT VERSION: 5.8.0
 // Author: Saeed Golestani
-// Date: 2024-08-21
+// Date: 2024-08-22
 // Changes:
-// 1. (FEATURE) Added a calculated "Waste Percentage" field to each part in the BOM.
-//    This value is automatically calculated and stored when a part is saved, based
-//    on its dimensions and the selected ideal coil.
-// 2. (UI) The parts list in the "Manage Parts" modal now displays this new waste
-//    percentage, providing immediate feedback to the user.
-// 3. (DATA) The BOM Excel export now includes a "درصد ضایعات برش" column.
-// 4. (REFACTOR) Centralized the waste calculation logic into a single helper
-//    function (`calculatePartWastePercentage`) to ensure consistency and improve
-//    maintainability. The `calculateShortage` and `calculateMaxProduction`
-//    functions now use the stored waste value, improving performance.
-// 5. (VERSION) Incremented app version to 5.6.0.
+// 1. (FEATURE) Implemented a new smart/cascading filter modal for coil imports
+//    from Excel. Users can now filter imported coils by Type, Feature, Thickness,
+//    and Width before adding them to the system.
+// 2. (UI/UX) Simplified the confirmation message for updating existing coils during
+//    Excel import. Instead of listing every coil, it now shows a single, general
+//    confirmation prompt.
+// 3. (REFACTOR) Refactored the `processImportedCoils` function to accommodate the
+//    new filter modal workflow, separating new coils and coils-to-be-updated logic.
+// 4. (NEW) Added new helper functions (`setupCoilImportFilters`,
+//    `updateCoilFeatureFilter`, `updateCoilThicknessFilter`, `updateCoilWidthFilter`)
+//    to manage the new filter UI.
+// 5. (VERSION) Incremented app version to 5.8.0.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '5.6.0';
+const APP_VERSION = '5.8.0';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -2319,6 +2320,7 @@ async function processImportedBOM(data) {
     const rejectedProductsInfo = [];
     const skippedExistingProducts = [];
     const uniqueMissingCoilSpecs = new Set();
+    const otherRejectionReasons = new Set();
     const existingProductKeys = new Set(products.map(p => `${p.type}-${p.model}`));
 
     Object.values(importedProducts).forEach(productGroup => {
@@ -2333,20 +2335,25 @@ async function processImportedBOM(data) {
         
         for (const part of productGroup.parts) {
             if (partCodesInThisGroup.has(part.code)) {
-                reasonsForInvalidity.add(`کد قطعه تکراری (${part.code}) در داخل این محصول.`); isProductValid = false;
+                reasonsForInvalidity.add(`کد قطعه تکراری (${part.code}) در داخل این محصول.`);
+                otherRejectionReasons.add(`کد قطعه تکراری (${part.code}) در یک محصول.`);
+                isProductValid = false;
             }
             partCodesInThisGroup.add(part.code);
 
             const hasMatchingCoil = coils.some(c => c.type === part.sheetType && c.feature === part.sheetFeature && c.thickness === part.thickness && c.width === part.idealCoilWidth);
             if (!hasMatchingCoil) {
-                const specKey = `${part.sheetType} / ${part.sheetFeature} / ضخامت: ${part.thickness} / عرض: ${part.idealCoilWidth}`;
-                reasonsForInvalidity.add(`کویل ایده‌آل برای قطعه "${part.name}" یافت نشد (${specKey})`);
-                uniqueMissingCoilSpecs.add(specKey); isProductValid = false;
+                const specKey = `نوع: ${part.sheetType} | ویژگی: ${part.sheetFeature} | ضخامت: ${part.thickness} | عرض: ${part.idealCoilWidth}`;
+                uniqueMissingCoilSpecs.add(specKey); 
+                isProductValid = false;
             }
         }
         
-        if (isProductValid) validProductGroups.push(productGroup);
-        else rejectedProductsInfo.push({ name: productKey, reasons: [...reasonsForInvalidity] });
+        if (isProductValid) {
+            validProductGroups.push(productGroup);
+        } else {
+            rejectedProductsInfo.push({ name: productKey, reasons: [...reasonsForInvalidity] });
+        }
     });
 
     // 3. Construct and Display Confirmation
@@ -2357,18 +2364,26 @@ async function processImportedBOM(data) {
     let summaryMessages = [];
     if (validProductGroups.length > 0) summaryMessages.push(`✅ ${validProductGroups.length} محصول جدید آماده ورود هستند.`);
     if (skippedExistingProducts.length > 0) summaryMessages.push(`\n⚠️ ${skippedExistingProducts.length} محصول به دلیل وجود در سیستم، نادیده گرفته شدند.`);
+    
     if (rejectedProductsInfo.length > 0) {
-        const rejectedText = rejectedProductsInfo.map(p => `  - محصول ${p.name}:\n    - ${p.reasons.join('\n    - ')}`).join('\n');
-        summaryMessages.push(`\n❌ ${rejectedProductsInfo.length} محصول زیر به دلیل نقص وارد نخواهند شد:\n${rejectedText}`);
+        summaryMessages.push(`\n❌ ${rejectedProductsInfo.length} محصول به دلیل نقص‌های زیر وارد نخواهند شد:`);
     }
-    if (uniqueMissingCoilSpecs.size > 0) summaryMessages.push(`\n⚠️ کویل‌های ایده‌آل زیر در انبار موجود نیستند.`);
+    if (uniqueMissingCoilSpecs.size > 0) {
+        const missingCoilsList = [...uniqueMissingCoilSpecs].map(spec => `  • ${spec}`).join('\n');
+        summaryMessages.push(`\n- کسری کویل‌های ایده‌آل زیر در انبار:\n${missingCoilsList}`);
+    }
+    if (otherRejectionReasons.size > 0) {
+        const otherReasonsList = [...otherRejectionReasons].map(reason => `  • ${reason}`).join('\n');
+        summaryMessages.push(`\n- سایر خطاها:\n${otherReasonsList}`);
+    }
+
     if (validProductGroups.length === 0) {
         showAlert("هیچ محصول جدید و معتبری برای ورود یافت نشد.\n\n" + summaryMessages.join('\n\n')); return;
     }
 
     summaryMessages.push("\n\n❓ آیا مایل به ادامه و ورود محصولات معتبر هستید؟");
     
-    const userConfirmed = await showConfirmationModal(summaryMessages.join('\n\n'));
+    const userConfirmed = await showConfirmationModal(summaryMessages.join('\n'));
     if (!userConfirmed) { alert("عملیات ورود اطلاعات لغو شد."); return; }
     
     tempImportData = validProductGroups.flatMap(group => group.parts);
@@ -2496,8 +2511,7 @@ async function processImportedCoils(data) {
         if (existingCodesInSystem.has(internalCode)) {
             coilsToUpdate.push({
                 internalCode,
-                newWeight: parseFloat(row['وزن']),
-                displayCode: exportedCode,
+                newWeight: parseFloat(row['وزن'])
             });
         } else {
             newCoils.push({
@@ -2524,29 +2538,16 @@ async function processImportedCoils(data) {
         return;
     }
 
-    let confirmationParts = [];
+    let userConfirmedUpdate = true;
     if (coilsToUpdate.length > 0) {
-        const updateDetails = coilsToUpdate.map(u => {
-            const existingCoil = coils.find(c => c.companyCode === u.internalCode);
-            return `  - کد ${u.displayCode}: وزن از ${existingCoil.weight} به ${u.newWeight} ک.گ.`;
-        }).join('\n');
-        confirmationParts.push(`تعداد ${coilsToUpdate.length} کویل موجود در سیستم، در فایل اکسل نیز یافت شد:\n${updateDetails}\n\nآیا مایل به به‌روزرسانی وزن آنها هستید؟`);
+        const confirmMessage = `تعداد ${coilsToUpdate.length} کویل موجود در سیستم، در فایل اکسل نیز یافت شد. آیا مایل به به‌روزرسانی وزن آنها هستید؟`;
+        userConfirmedUpdate = await showConfirmationModal(confirmMessage);
     }
-
-    if (newCoils.length > 0) {
-        confirmationParts.push(`همچنین ${newCoils.length} کویل جدید برای ورود شناسایی شد.`);
-    }
-
-    const userConfirmed = await showConfirmationModal(confirmationParts.join('\n\n'));
-    if (!userConfirmed) {
-        alert("عملیات ورود اطلاعات لغو شد.");
-        return;
-    }
-
-    // --- User Confirmed: Perform Actions ---
-    let finalAlertParts = [];
-    let updatedCount = 0;
-    if (coilsToUpdate.length > 0) {
+    
+    if (!userConfirmedUpdate) {
+        alert("عملیات به‌روزرسانی کویل‌های موجود لغو شد.");
+    } else {
+        let updatedCount = 0;
         coilsToUpdate.forEach(update => {
             const coilToUpdate = coils.find(c => c.companyCode === update.internalCode);
             if (coilToUpdate) {
@@ -2556,7 +2557,9 @@ async function processImportedCoils(data) {
             }
         });
         if (updatedCount > 0) {
-            finalAlertParts.push(`${updatedCount} کویل با موفقیت به‌روزرسانی شد.`);
+            alert(`${updatedCount} کویل با موفقیت به‌روزرسانی شد.`);
+            saveDataToLocalStorage();
+            renderCoilList();
         }
     }
 
@@ -2585,14 +2588,10 @@ async function processImportedCoils(data) {
 
             if (finalCoilsToImport.length > 0) {
                 coils.push(...finalCoilsToImport);
-                finalAlertParts.push(`${finalCoilsToImport.length} کویل جدید وارد شد.`);
-            }
-
-            saveDataToLocalStorage();
-            renderCoilList();
-            if (finalAlertParts.length > 0) {
-                alert(finalAlertParts.join('\n'));
-            } else if (finalCoilsToImport.length === 0) {
+                saveDataToLocalStorage();
+                renderCoilList();
+                alert(`${finalCoilsToImport.length} کویل جدید وارد شد.`);
+            } else {
                  alert("با توجه به فیلتر، هیچ کویل جدیدی برای ورود وجود نداشت.");
             }
             
@@ -2601,13 +2600,6 @@ async function processImportedCoils(data) {
         
         applyBtn.replaceWith(applyBtn.cloneNode(true));
         document.getElementById('applyImportFilterBtn').addEventListener('click', applyFilterHandler);
-    } else {
-        // Only updates were performed, no new coils to filter
-        saveDataToLocalStorage();
-        renderCoilList();
-        if (finalAlertParts.length > 0) {
-            alert(finalAlertParts.join('\n'));
-        }
     }
 }
 
