@@ -1,7 +1,7 @@
 
 سیستم جامع برش و برنامه‌ریزی تولید
 
-![alt text](https://img.shields.io/badge/نسخه-5.6.0-blue.svg)
+![alt text](https://img.shields.io/badge/نسخه-5.8.0-blue.svg)
 
 
 ![alt text](https://img.shields.io/badge/نویسنده-سعید%20گلستانی-brightgreen.svg)
