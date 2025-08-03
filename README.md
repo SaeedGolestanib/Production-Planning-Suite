@@ -1,6 +1,6 @@
 سیستم جامع برش و برنامه‌ریزی تولید (Comprehensive Cutting & Production Planning System)
 
-![alt text](https://img.shields.io/badge/نسخه-6.0.4-blue.svg)
+![alt text](https://img.shields.io/badge/نسخه-6.0.5-blue.svg)
 
 
 ![alt text](https://img.shields.io/badge/زبان-JavaScript-yellow.svg)
