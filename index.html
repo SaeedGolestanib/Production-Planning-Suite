@@ -48,12 +48,25 @@
             padding-bottom: 20px;
             border-bottom: 1px solid #e9ecef;
             flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
         }
         .version-tag {
             font-size: 1.1em;
             font-weight: bold;
             color: #495057;
             margin: 0 15px;
+        }
+        .header-version-tag {
+             font-size: 0.7em;
+             font-weight: 700;
+             color: #6c757d;
+             background-color: #e9ecef;
+             padding: 3px 8px;
+             border-radius: 10px;
+             vertical-align: middle;
         }
         .logo-image {
             position: absolute;
@@ -99,6 +112,7 @@
             padding: 0 30px;
             background-color: #f8f9fa;
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
         .nav-tab {
             padding: 15px 25px;
@@ -119,6 +133,15 @@
             color: #667eea;
             border-bottom-color: #667eea;
             background-color: #fff;
+        }
+        /* Style for the active settings/help tabs */
+        #tab-settings.active, #tab-help.active {
+             color: #764ba2;
+             border-bottom-color: #764ba2;
+        }
+        #tab-coil-analysis.active {
+            color: #28a745;
+            border-bottom-color: #28a745;
         }
         .page {
             display: none;
@@ -158,18 +181,21 @@
         .planning-column {
             flex: 1 1 50%;
             gap: 20px;
-            overflow-y: auto; 
+            overflow: hidden; /* Changed from auto to hidden */
+            display: flex; /* Ensure flex context */
+            flex-direction: column;
         }
 
         #page-planning .planning-column:first-child {
             flex: 1 1 40%;
             min-width: 500px;
+            overflow-y: auto; /* Allow this column to scroll independently */
         }
         #page-planning .planning-column:last-child {
             flex: 1 1 60%;
         }
         
-        .form-section, .list-section, .settings-section {
+        .form-section, .list-section, .settings-section-card, .analysis-section {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 10px;
@@ -177,9 +203,38 @@
             display: flex;
             flex-direction: column;
         }
+        .analysis-section {
+            flex: 1 1 50%; /* Equal split for analysis page */
+        }
+        #analysisResultsContainer {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .analysis-result-card {
+            background-color: #fff;
+            border: 2px solid;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .analysis-result-card.custom { border-color: #28a745; }
+        .analysis-result-card.standard { border-color: #17a2b8; }
+        .analysis-result-card h4 {
+            margin-top: 0;
+            font-size: 1.4em;
+            color: #333;
+        }
+        .analysis-result-card p {
+            font-size: 1.1em;
+            line-height: 1.7;
+        }
+        .analysis-result-card strong { color: #667eea; }
 
         .settings-section {
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .page-layout-container .form-section,
@@ -194,6 +249,18 @@
             border: 2px solid #764ba2;
             overflow-y: auto;
         }
+        
+        #shortageResultSection {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Important for flex-grow to work in a flex container */
+        }
+        
+        #shortageResultSection .table-container {
+            flex-grow: 1;
+        }
+        
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -205,7 +272,7 @@
             padding-bottom: 10px;
             flex-shrink: 0;
         }
-        .section-header h2, .settings-section h3 {
+        .section-header h2, .settings-section-card h3 {
             border-bottom: none;
             margin-bottom: 0;
             margin-left: auto;
@@ -229,8 +296,9 @@
         .optimization-controls {
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
+            align-items: flex-end; /* Align items to the bottom for a cleaner look */
             gap: 15px;
+            margin-top: 20px; /* Add margin to separate from checkbox */
         }
         h2 {
             color: #495057;
@@ -252,6 +320,12 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
+        }
+        .settings-page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            padding-bottom: 20px;
         }
         .settings-grid {
             display: grid;
@@ -305,7 +379,7 @@
             align-self: flex-start;
             margin-top: 5px;
         }
-        input, select {
+        input, select, textarea {
             padding: 10px;
             border: 2px solid #ced4da;
             border-radius: 5px;
@@ -314,11 +388,15 @@
             transition: border-color 0.3s;
             background-color: white;
         }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
         input[readonly] {
             background-color: #e9ecef;
             cursor: not-allowed;
         }
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -447,6 +525,16 @@
             background-color: #e6e9fd !important;
             font-weight: bold;
         }
+		tr.active-batch td {
+		background-color: #e6e9fd !important;
+		font-weight: bold;
+		}
+		/* این استایل جدید را اضافه کنید */
+		tr.active-coil td {
+			background-color: #d1ecf1 !important; /* رنگ فیروزه‌ای روشن */
+			font-weight: bold;
+			cursor: pointer;
+		}
         .modal {
             display: none;
             position: fixed;
@@ -487,7 +575,7 @@
         #aboutModal .modal-content p, #helpModal .modal-content p {
             color: #333;
             margin: 10px 0;
-            font-size: 1.1em;
+            font-size: 1em; /* Reduced font size for help */
             text-align: right;
             line-height: 1.8;
         }
@@ -507,7 +595,7 @@
             color: #667eea;
         }
         #helpModal .modal-content {
-            max-width: 1250px; 
+            max-width: 1500px; /* Increased width for help */
             text-align: right;
         }
         #helpModal .modal-content h4 {
@@ -533,21 +621,6 @@
             font-size: 1.4em;
             cursor: pointer;
             color: #aaa;
-        }
-        .page-actions-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: auto;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            flex-shrink: 0;
-        }
-        .page-actions-footer .version-tag {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: #495057;
-            margin: 0 15px;
         }
         .settings-item {
             justify-content: space-between;
@@ -630,6 +703,10 @@
             max-width: 120px;
             padding: 8px;
         }
+        #productionPlanContainer {
+            max-height: 135px; /* Sized to fit approx. 2 rows, then scrolls */
+            overflow-y: auto;
+        }
         
         #partsModal .modal-content {
             max-width: 1250px;
@@ -638,22 +715,22 @@
             max-height: 90vh; 
         }
         #partsModal .form-section {
-            padding: 10px 15px;
-            margin-bottom: 15px;
+            padding: 5px 15px;
+            margin-bottom: 10px;
             flex-shrink: 0;
         }
         #partsModal .form-section h3 {
             margin-top: 5px;
-            margin-bottom: 10px;
+            margin-bottom: 5px; /* Reduced */
             font-size: 1.05em;
         }
         #partsModal .form-section h4 {
-            margin-top: 10px;
-            margin-bottom: 8px;
+            margin-top: 8px; /* Reduced */
+            margin-bottom: 5px; /* Reduced */
             font-size: 1em;
         }
         #partsModal .input-grid {
-            gap: 10px 15px;
+            gap: 5px 10px; /* Reduced */
         }
         #partsModal .form-section .input-item select, 
         #partsModal .form-section .input-item input {
@@ -662,7 +739,10 @@
         }
          #partsModal .form-section .input-item label {
             font-size: 0.9em;
-            margin-bottom: 5px;
+            margin-bottom: 3px; /* Reduced */
+        }
+        #partsModal .form-buttons-container {
+             margin-top: 15px;
         }
         #partsListForProduct {
             flex-grow: 1; 
@@ -686,15 +766,29 @@
             flex-direction: column;
             gap: 20px;
         }
+        .matching-coil-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 8px; /* Spacing between cards */
+        }
+        .matching-coil-card p {
+            margin: 0;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        #print-area { display: none; }
 
         @media (max-width: 1200px) {
-            .page-layout-container {
+            .page-layout-container, .settings-page-grid {
                 flex-direction: column;
                 align-items: stretch;
                 overflow-y: auto;
             }
              .page-layout-container > .form-section,
-             .page-layout-container > .list-section {
+             .page-layout-container > .list-section,
+             .page-layout-container > .analysis-section {
                 margin-bottom: 20px;
              }
         }
@@ -725,7 +819,7 @@
             body { background: none !important; padding: 0; margin: 0; overflow: visible !important; }
             .container { box-shadow: none !important; border: none; max-width: 100% !important; padding: 10px; overflow: visible !important; height: auto !important; }
             .page-layout-container { display: block !important; } 
-            .nav-tabs, .table-controls, .nav-buttons, .page-actions-footer, .operations-cell, .io-buttons, .form-buttons-container, .modal, .close-btn, .section-header .btn-main-action, .filter-container { display: none !important; }
+            .nav-tabs, .table-controls, .nav-buttons, .operations-cell, .io-buttons, .form-buttons-container, .modal, .close-btn, .section-header .btn-main-action, .filter-container, .print-hide { display: none !important; }
             .logo-image, .aabsal-logo-image { position: absolute; display: block; }
             .pdf-only-title { display: block !important; text-align: center; margin-bottom: 20px; }
             .page { display: none !important; }
@@ -737,9 +831,12 @@
             thead { display: table-header-group; }
             tbody { display: table-row-group; }
             .results-section { border: 2px solid #333 !important; }
-            .result-card, .list-section, .form-section { box-shadow: none !important; border: 2px solid #333 !important; page-break-inside: avoid; margin-top: 15px; }
+            .settings-section-card, .list-section, .form-section { box-shadow: none !important; border: 2px solid #333 !important; page-break-inside: avoid; margin-top: 15px; }
             a[href]:after { content: none !important; }
             
+            #page-planning.active .planning-column:first-child { display: none !important; }
+            #page-planning.active .planning-column:last-child { width: 100%; flex-basis: 100%; max-width: 100%; }
+
             #page-planning .form-section, 
             #page-planning .list-section {
                 page-break-inside: avoid;
@@ -751,8 +848,33 @@
             #page-work-sheets .list-section {
                 page-break-inside: auto !important;
             }
+
+            /* Rules for printing parts list */
+            body.printing-parts-list .container { display: none !important; }
+            body.printing-parts-list #print-area { display: block !important; }
         }
-    </style>
+		.print-only-summary {
+            display: none;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .print-only-summary h3 {
+             margin-top: 0;
+             font-size: 1.2em;
+             border-bottom: 1px solid #ddd;
+        }
+		.result-section-title {
+			font-size: 1.4em;
+			font-weight: 800;
+			color: #667eea;
+			border-bottom: 2px solid #e9ecef;
+			padding-bottom: 10px;
+			margin-bottom: 20px;
+		}
+	
+	</style>
 </head>
 <body>
     <div class="container" id="mainContainer">
@@ -761,13 +883,20 @@
         
         <div class="app-header">
             <h1 id="main-title">سیستم جامع تولید</h1>
+            <span class="version-tag header-version-tag"></span>
         </div>
 
         <div class="nav-tabs">
             <div class="nav-tab active" id="tab-coils">کویل ورق</div>
             <div class="nav-tab" id="tab-sheets">برش ورق</div>
+            <div class="nav-tab" id="tab-coil-analysis">تحلیل کویل</div>
             <div class="nav-tab" id="tab-planning">برنامه‌ریزی تولید</div>
             <div class="nav-tab" id="tab-work-sheets">ورق های پای کار</div>
+            
+            <div style="flex-grow: 1;"></div> 
+            
+            <div class="nav-tab" id="tab-help">❓ راهنما</div>
+            <div class="nav-tab" id="tab-settings">⚙️ تنظیمات</div>
         </div>
         
         <div id="errorModal" class="modal">
@@ -810,17 +939,20 @@
                 <p><strong><span class="version-tag"></span></strong> | <strong>نویسنده:</strong> سعید گلستانی</p>
                 <hr>
                 <h4>مقدمه</h4>
-                <p>این برنامه یک ابزار جامع برای کمک به فرآیندهای برنامه‌ریزی و تولید است که از دو ماژول اصلی تشکیل شده است: <strong>بهینه‌سازی برش</strong> و <strong>برنامه‌ریزی تولید</strong>.</p>
+                <p>این برنامه یک ابزار جامع برای کمک به فرآیندهای برنامه‌ریزی و تولید است که از سه ماژول اصلی تشکیل شده است: <strong>بهینه‌سازی برش</strong>، <strong>تحلیل کویل ایده‌آل</strong> و <strong>برنامه‌ریزی تولید</strong>.</p>
                 
-                <h4>ماژول بهینه‌سازی برش</h4>
-                <p>این بخش برای پیدا کردن بهترین و بهینه‌ترین حالت‌های ممکن جهت برش ورق‌های فلزی از کویل‌های موجود در انبار طراحی شده است. شما می‌توانید اولویت بهینه‌سازی را مشخص کنید:</p>
+                <h4>ماژول بهینه‌سازی برش (تب برش ورق)</h4>
+                <p>این بخش برای پیدا کردن بهترین حالت‌های برش ورق از کویل‌های <strong>موجود در انبار</strong> طراحی شده است. شما می‌توانید اولویت بهینه‌سازی را مشخص کنید (کمترین ضایعات، مصرف کویل‌های کم‌وزن و...).</p>
+                
+                <h4>ماژول تحلیل کویل ایده‌آل (تب تحلیل کویل) - جدید!</h4>
+                <p>این ماژول جدید برای کمک به **تصمیم‌گیری خرید** طراحی شده است. اگر قطعه جدیدی دارید و نمی‌دانید بهترین عرض کویل برای خرید چیست، از این بخش استفاده کنید. این ماژول به دو سوال اصلی پاسخ می‌دهد:</p>
                 <ul>
-                    <li><strong>کمترین ضایعات (پیش‌فرض):</strong> طرح‌هایی را نمایش می‌دهد که کمترین پرتی را دارند.</li>
-                    <li><strong>مصرف کویل‌های کم‌وزن:</strong> برای خلاص شدن از کویل‌های کوچک و باقی‌مانده در انبار.</li>
-                    <li><strong>تولید حداکثری یک قطعه خاص:</strong> اگر تولید یک قطعه فوریت دارد، این گزینه طرح‌هایی را که بیشترین تعداد از آن قطعه را تولید می‌کنند در اولویت قرار می‌دهد.</li>
+                    <li><strong>کویل سفارشی:</strong> اگر بتوانید هر عرضی را مستقیماً به کارخانه فولاد سفارش دهید، این ابزار **دقیق‌ترین و بهینه‌ترین عرض ممکن** را برای تولید یک یا چند قطعه به شما پیشنهاد می‌دهد تا ضایعات به حداقل برسد.</li>
+                    <li><strong>کویل استاندارد بازاری:</strong> شما لیستی از عرض‌های استاندارد موجود در بازار (مثلاً ۱۰۰۰، ۱۲۵۰) را به برنامه می‌دهید و برنامه محاسبه می‌کند که کدام‌یک از این عرض‌های استاندارد، **بهترین گزینه برای خرید** و دارای کمترین ضایعات است.</li>
+                    <li><strong>قابلیت طول بر شدن (Slitting):</strong> با فعال‌سازی این گزینه (فقط برای تحلیل دو قطعه)، برنامه امکان تقسیم یک کویل مادر به دو کویل کوچکتر را برای تولید دو قطعه مختلف به طور همزمان در نظر می‌گیرد و بهترین نقطه برش طولی را برای کاهش ضایعات کلی پیشنهاد می‌دهد.</li>
                 </ul>
 
-                <h4>ماژول برنامه‌ریزی تولید</h4>
+                <h4>ماژول برنامه‌ریزی تولید (تب برنامه‌ریزی تولید)</h4>
                 <p>این بخش به شما امکان می‌دهد تا لیست قطعات مورد نیاز برای هر محصول (BOM) را تعریف کرده و با ایجاد **سفارشات کاری** مجزا، برنامه تولید را مدیریت و کسری مواد را برای هر سفارش به طور دقیق محاسبه نمایید.</p>
                  <ul>
                     <li><strong>مدیریت محصولات (BOM):</strong> ابتدا محصولات نهایی و لیست تمام قطعات مورد نیاز برای تولید هر یک را تعریف کنید.</li>
@@ -856,35 +988,33 @@
 
 		<div id="page-coils" class="page active"></div>
 		<div id="page-sheets" class="page"></div>
+        <div id="page-coil-analysis" class="page"></div>
         <div id="page-work-sheets" class="page"></div>
 		<div id="page-results" class="page"></div>
 		<div id="page-planning" class="page"></div>
         <div id="page-settings" class="page"></div>
     </div>
+    
+    <div id="print-area"></div>
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 5.8.0
+// SCRIPT VERSION: 6.0.4
 // Author: Saeed Golestani
-// Date: 2024-08-22
+// Date: 2024-09-05
 // Changes:
-// 1. (FEATURE) Implemented a new smart/cascading filter modal for coil imports
-//    from Excel. Users can now filter imported coils by Type, Feature, Thickness,
-//    and Width before adding them to the system.
-// 2. (UI/UX) Simplified the confirmation message for updating existing coils during
-//    Excel import. Instead of listing every coil, it now shows a single, general
-//    confirmation prompt.
-// 3. (REFACTOR) Refactored the `processImportedCoils` function to accommodate the
-//    new filter modal workflow, separating new coils and coils-to-be-updated logic.
-// 4. (NEW) Added new helper functions (`setupCoilImportFilters`,
-//    `updateCoilFeatureFilter`, `updateCoilThicknessFilter`, `updateCoilWidthFilter`)
-//    to manage the new filter UI.
-// 5. (VERSION) Incremented app version to 5.8.0.
+// 1. (FIX) Corrected the logic for standard coil analysis.
+// 2. (ALGORITHM) Re-implemented `findBestLayoutForStandardWidth` to generate and
+//    compare a comprehensive list of all possible layouts (combined, single-part,
+//    and slit) for a given width, ensuring the absolute best option is chosen.
+// 3. (REFACTOR) Simplified the `runCoilAnalysis` function for standard widths; it
+//    now correctly relies on the improved `findBestLayoutForStandardWidth`.
+// 4. (VERSION) Version updated to 6.0.4.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '5.8.0';
+const APP_VERSION = '6.0.4';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -898,6 +1028,7 @@ let sheetOrders = [];
 let products = [];
 let productionBatches = [];
 let wipData = {}; // Format: { 'partCode': quantity }
+let analysisParts = []; // For the new Coil Analysis module
 
 // --- STATE VARIABLES ---
 let editingCoilId = null;
@@ -905,12 +1036,14 @@ let editingSheetId = null;
 let editingProductId = null;
 let editingPartId = null;
 let selectedBatchId = null;
+let selectedCoilId = null;
 let showOnlyPlannedProducts = true;
 let tempImportData = [];
 let currentImportType = null;
 let fullShortageReportData = [];
 let lastActivePage = 'page-coils';
 let searchTimeout = null;
+let editingAnalysisPartId = null;
 
 // Table display states
 let coilListState = { searchTerm: '', sortKey: 'type', sortDir: 'asc' };
@@ -954,10 +1087,11 @@ function initializeApp() {
     buildPageHTML();
     buildWipPage();
     buildPlanningPage();
-    // This function must be called AFTER the pages are built to find the elements
+    buildCoilAnalysisPage(); // New page for coil analysis
     displayAppVersion(); 
     bindEventListeners();
     bindPlanningEventListeners();
+    bindCoilAnalysisEventListeners(); // New event listeners
     initializeTabs();
     populateFormDropdowns();
     showPage('page-coils');
@@ -1171,7 +1305,7 @@ function handleLogin() {
     const pass = document.getElementById('password').value;
     if (user === settings.username && pass === settings.password) {
         document.getElementById('login-section').style.display = 'none';
-        document.getElementById('settings-section').style.display = 'block';
+        document.getElementById('settings-section').style.display = 'flex';
         populateSettingsForm();
     } else {
         alert('نام کاربری یا رمز عبور اشتباه است.');
@@ -1211,19 +1345,14 @@ function populateSettingsForm() {
 
 // --- HTML & PAGE BUILDING ---
 function buildPageHTML() {
-    const pageActionsFooterHTML = `
-        <div class="page-actions-footer">
-            <button class="btn btn-warning btn-show-help">راهنما</button>
-            <span class="version-tag"></span>
-            <button class="btn btn-secondary btn-show-settings">تنظیمات</button>
-        </div>
-    `;
-
     document.getElementById('page-coils').innerHTML = `
         <div class="page-layout-container">
             <div class="form-section">
                 <h2>مرحله ۱: افزودن و ویرایش کویل‌ها</h2>
-                <div class="input-grid">
+                
+				<div class="input-grid">
+				
+				
                     <div class="input-item"><label for="coilType">نوع ورق:</label><select id="coilType"></select></div>
                     <div class="input-item"><label for="coilFeature">ویژگی ورق:</label><select id="coilFeature"></select></div>
                     <div class="input-item"><label for="coilCodeSuffix">کد انبار (۸ رقمی):</label><div class="company-code-input"><input type="text" id="coilCodeSuffix" class="company-code-suffix" placeholder="کد ۴ رقمی" maxlength="4"><span id="coilCodePrefix" class="company-code-prefix">----</span></div></div>
@@ -1236,7 +1365,13 @@ function buildPageHTML() {
                     <button id="coilSubmitBtn" class="btn btn-primary">افزودن کویل</button>
                     <button id="coilCancelBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                 </div>
-                ${pageActionsFooterHTML}
+				
+				
+				<hr style="margin: 25px 0 15px 0;">
+				<h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0;">قطعات استفاده کننده از این کویل</h3>
+				<div id="coilUsageDetailsContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #fcfcfc;">
+					<p style="text-align: center; color: #6c757d; margin-top: 20px;">برای مشاهده جزئیات، روی یک ردیف در جدول کویل‌ها کلیک کنید.</p>
+				</div>
             </div>
             <div class="list-section">
                 <div class="section-header">
@@ -1263,11 +1398,15 @@ function buildPageHTML() {
                     <div class="input-item"><label for="sheetLength">طول ورق (م.م):</label><input type="number" id="sheetLength" placeholder="مثال: 2000"></div>
                     <div class="input-item"><label for="sheetWidth">عرض ورق (م.م):</label><input type="number" id="sheetWidth" placeholder="مثال: 1000"></div>
                 </div>
-                <div class="form-buttons-container">
+                <div class="form-buttons-container" style="margin-top: 25px;">
                     <button id="sheetSubmitBtn" class="btn btn-primary">افزودن ابعاد</button>
                     <button id="sheetCancelBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                 </div>
-                ${pageActionsFooterHTML}
+                <hr style="margin: 25px 0 15px 0;">
+                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0;">کویل‌های منطبق با قطعات لیست</h3>
+                <div id="matchingCoilsContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #fcfcfc;">
+                    <p style="text-align: center; color: #6c757d; margin-top: 20px;">ابتدا قطعات را به لیست ابعاد برش اضافه کنید.</p>
+                </div>
             </div>
             <div class="list-section">
                 <div class="section-header">
@@ -1279,9 +1418,16 @@ function buildPageHTML() {
                         <button id="btnClearSheets" class="btn btn-danger">پاک کردن همه</button>
                     </div>
                 </div>
-                <hr>
-                <h3>تنظیمات و اجرای بهینه‌سازی</h3>
-                <div class="optimization-controls">
+				<div style="display: flex; gap: 40px; align-items: center; flex-wrap: wrap;">
+					<div class="filter-container" style="justify-content: flex-start; margin-bottom: 0;">
+						<input type="checkbox" id="useStockOnlyCheckbox" checked style="width: 18px; height: 18px; margin-left: 8px;">
+						<label for="useStockOnlyCheckbox" style="font-size: 1.1em; font-weight: 600; cursor: pointer; margin-bottom:0;">فقط کویل‌های دارای موجودی</label>
+					</div>
+					<div class="filter-container" style="justify-content: flex-start; margin-bottom: 0;">
+						<input type="checkbox" id="enableSlittingOptimizationCheckbox" style="width: 18px; height: 18px; margin-left: 8px;">
+						<label for="enableSlittingOptimizationCheckbox" style="font-size: 1.1em; font-weight: 600; cursor: pointer; margin-bottom:0;">فعال‌سازی طول بر شدن (فقط برای ۲ قطعه)</label>
+					</div>
+				</div>               <div class="optimization-controls">
                     <div class="input-item"><label for="maxWaste">حداکثر ضایعات مجاز (%):</label><input type="number" id="maxWaste" min="0" max="100" value="5" style="max-width: 150px;"></div>
                     <div class="input-item"><label for="optimizationPriority">اولویت بهینه‌سازی:</label>
                         <select id="optimizationPriority" style="max-width: 250px;">
@@ -1291,9 +1437,9 @@ function buildPageHTML() {
                         </select>
                     </div>
                     <div class="input-item" id="prioritizedSheetContainer" style="display: none;"><label for="prioritizedSheet">انتخاب قطعه برای اولویت:</label><select id="prioritizedSheet" style="max-width: 250px;"></select></div>
-                    <button id="btnRunOptimization" class="btn btn-success btn-main-action" style="align-self: flex-end;">نمایش طرح‌های ممکن</button>
+                    <button id="btnRunOptimization" class="btn btn-success btn-main-action">نمایش طرح‌های ممکن</button>
                 </div>
-                <div class="table-container" id="sheetOrderList"></div>
+                <div class="table-container" id="sheetOrderList" style="margin-top: 15px;"></div>
             </div>
         </div>`;
     document.getElementById('page-results').innerHTML = `
@@ -1305,7 +1451,7 @@ function buildPageHTML() {
             <button id="btnEditInputs" class="btn btn-warning">ویرایش ورودی‌ها</button>
         </div>`;
     document.getElementById('page-settings').innerHTML = `
-        <div id="login-section">
+        <div id="login-section" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
             <h2>ورود به بخش تنظیمات</h2>
             <div class="login-form-container">
                 <div class="input-item"><label for="username">نام کاربری:</label><input type="text" id="username"></div>
@@ -1317,57 +1463,63 @@ function buildPageHTML() {
             </div>
         </div>
         <div id="settings-section" class="settings-section" style="display: none;">
-            <h2>تنظیمات برنامه</h2>
-            
-            <h3>مدیریت داده‌ها (پشتیبان‌گیری و بازیابی)</h3>
-            <p><strong>هشدار:</strong> بازیابی اطلاعات، تمام داده‌های فعلی برنامه را پاک کرده و با اطلاعات فایل پشتیبان جایگزین می‌کند. توصیه می‌شود ابتدا یک فایل پشتیبان جدید تهیه کنید.</p>
-            <div class="form-buttons-container">
-                <button id="btnBackup" class="btn btn-info">دریافت فایل پشتیبان (Backup)</button>
-                <button id="btnRestore" class="btn btn-warning">بازیابی از فایل پشتیبان (Restore)</button>
-            </div>
-
-            <hr style="margin: 25px 0;">
-
-            <h3>مدیریت دسترسی و تنظیمات اصلی</h3>
-            <div class="settings-grid">
-                <div class="input-item"><label for="setting-username">نام کاربری:</label><input type="text" id="setting-username"></div>
-                <div class="input-item"><label for="setting-password">رمز عبور کاربر:</label><input type="password" id="setting-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
-                <div class="input-item"><label for="setting-waste-percentage">درصد ضریب اطمینان خرید (%):</label><input type="number" id="setting-waste-percentage" step="0.1" min="0"></div>
-            </div>
-            <hr style="margin: 25px 0;">
-            <button id="btnShowAdvanced" class="btn btn-warning" style="margin-bottom: 20px;">دسترسی پیشرفته</button>
-            <div id="advanced-settings-fields" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <h3>تنظیمات پیشرفته (محرمانه)</h3>
-                <div class="settings-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-                    <div class="input-item"><label for="setting-super-password">رمز عبور پیشرفته:</label><input type="password" id="setting-super-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
-                    <div class="input-item"><label for="setting-expire-date">تاریخ انقضا:</label><input type="date" id="setting-expire-date"></div>
-                    <div class="input-item"><label for="setting-show-aabsal-logo">نمایش لوگوی آبسال</label><input type="checkbox" id="setting-show-aabsal-logo"></div>
-                </div>
-                <h4 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">دسترسی بخش برنامه‌ریزی</h4>
-                <div class="settings-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
-                    <div class="input-item">
-                        <label for="setting-enable-planning-auth">فعال‌سازی رمز برای بخش برنامه‌ریزی</label>
-                        <input type="checkbox" id="setting-enable-planning-auth">
-                    </div>
-                    <div class="input-item">
-                        <label for="setting-planning-username">نام کاربری برنامه‌ریزی:</label>
-                        <input type="text" id="setting-planning-username">
-                    </div>
-                    <div class="input-item">
-                        <label for="setting-planning-password">رمز عبور برنامه‌ریزی:</label>
-                        <input type="password" id="setting-planning-password" placeholder="برای عدم تغییر، خالی بگذارید">
+            <div class="settings-page-grid">
+                <div class="settings-section-card">
+                    <h3>مدیریت داده‌ها</h3>
+                    <p><strong>هشدار:</strong> بازیابی اطلاعات، تمام داده‌های فعلی برنامه را پاک می‌کند.</p>
+                    <div class="form-buttons-container">
+                        <button id="btnBackup" class="btn btn-info">دریافت پشتیبان</button>
+                        <button id="btnRestore" class="btn btn-warning">بازیابی از فایل</button>
                     </div>
                 </div>
+                 <div class="settings-section-card">
+                    <h3>دسترسی و تنظیمات اصلی</h3>
+                    <div class="settings-grid">
+                        <div class="input-item"><label for="setting-username">نام کاربری:</label><input type="text" id="setting-username"></div>
+                        <div class="input-item"><label for="setting-password">رمز عبور کاربر:</label><input type="password" id="setting-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
+                        <div class="input-item"><label for="setting-waste-percentage">ضریب اطمینان خرید (%):</label><input type="number" id="setting-waste-percentage" step="0.1" min="0"></div>
+                    </div>
+                </div>
+                 <div class="settings-section-card" style="grid-column: 1 / -1;">
+                    <button id="btnShowAdvanced" class="btn btn-warning" style="margin: 0 auto 20px auto; max-width: 300px;">تنظیمات پیشرفته (محرمانه)</button>
+                    <div id="advanced-settings-fields" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="margin-top: 0;">تنظیمات پیشرفته</h4>
+                        <div class="settings-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                            <div class="input-item"><label for="setting-super-password">رمز عبور پیشرفته:</label><input type="password" id="setting-super-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
+                            <div class="input-item"><label for="setting-expire-date">تاریخ انقضا:</label><input type="date" id="setting-expire-date"></div>
+                            <div class="input-item"><label for="setting-show-aabsal-logo">نمایش لوگوی آبسال</label><input type="checkbox" id="setting-show-aabsal-logo"></div>
+                        </div>
+                        <h4 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">دسترسی بخش برنامه‌ریزی</h4>
+                        <div class="settings-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                            <div class="input-item"><label for="setting-enable-planning-auth">فعال‌سازی رمز</label><input type="checkbox" id="setting-enable-planning-auth"></div>
+                            <div class="input-item"><label for="setting-planning-username">نام کاربری برنامه‌ریزی:</label><input type="text" id="setting-planning-username"></div>
+                            <div class="input-item"><label for="setting-planning-password">رمز عبور برنامه‌ریزی:</label><input type="password" id="setting-planning-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section-card" style="grid-column: 1 / -1;">
+                    <h3>مدیریت محتوای برنامه</h3>
+                    <div class="settings-page-grid" style="padding-bottom: 0;">
+                        <div>
+                           <h4>مدیریت انواع محصول</h4><div id="settingProductTypesList"></div>
+                           <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newProductTypeName">نام نوع محصول جدید:</label><input type="text" id="newProductTypeName"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddProductType" class="btn btn-primary">افزودن</button></div></div>
+                        </div>
+                        <div>
+                            <h4>مدیریت انواع ورق</h4><div id="settingTypesList"></div>
+                            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newTypeName">نام نوع جدید:</label><input type="text" id="newTypeName"></div><div class="input-item"><label for="newTypeDensity">دانسیته:</label><input type="number" step="0.01" id="newTypeDensity"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddType" class="btn btn-primary">افزودن</button></div></div>
+                        </div>
+                        <div>
+                            <h4>مدیریت ویژگی‌های ورق</h4><div id="settingFeaturesList"></div>
+                            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newFeatureName">نام ویژگی جدید:</label><input type="text" id="newFeatureName"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddFeature" class="btn btn-primary">افزودن</button></div></div>
+                        </div>
+                        <div>
+                            <h4>مدیریت پیش‌کدهای انبار</h4><div id="settingPrefixesList"></div>
+                            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newPrefixType">نوع ورق:</label><select id="newPrefixType"></select></div><div class="input-item"><label for="newPrefixFeature">ویژگی:</label><select id="newPrefixFeature"></select></div><div class="input-item"><label for="newPrefixCode">پیش‌کد (۴ رقم):</label><input type="text" id="newPrefixCode" maxlength="4"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddPrefix" class="btn btn-primary">افزودن</button></div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <h3>مدیریت انواع محصول</h3><div id="settingProductTypesList"></div>
-            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newProductTypeName">نام نوع محصول جدید:</label><input type="text" id="newProductTypeName" placeholder="مثال: اجاق گاز"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddProductType" class="btn btn-primary">افزودن نوع محصول</button></div></div>
-            <h3>مدیریت انواع ورق</h3><div id="settingTypesList"></div>
-            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newTypeName">نام نوع جدید:</label><input type="text" id="newTypeName" placeholder="مثال: روغنی"></div><div class="input-item"><label for="newTypeDensity">دانسیته:</label><input type="number" step="0.01" id="newTypeDensity" placeholder="مثال: 7.85"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddType" class="btn btn-primary">افزودن نوع</button></div></div>
-            <h3>مدیریت ویژگی‌های ورق</h3><div id="settingFeaturesList"></div>
-            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newFeatureName">نام ویژگی جدید:</label><input type="text" id="newFeatureName" placeholder="مثال: کششی"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddFeature" class="btn btn-primary">افزودن ویژگی</button></div></div>
-            <h3>مدیریت پیش‌کدهای انبار</h3><div id="settingPrefixesList"></div>
-            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;"><div class="input-item"><label for="newPrefixType">برای نوع ورق:</label><select id="newPrefixType"></select></div><div class="input-item"><label for="newPrefixFeature">برای ویژگی:</label><select id="newPrefixFeature"></select></div><div class="input-item"><label for="newPrefixCode">پیش‌کد (۴ رقم):</label><input type="text" id="newPrefixCode" placeholder="مثال: 0627" maxlength="4"></div><div class="input-item" style="justify-content: flex-end;"><button id="btnAddPrefix" class="btn btn-primary">افزودن قانون پیش‌کد</button></div></div>
-            <div class="form-buttons-container">
+             <div class="form-buttons-container" style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: auto;">
                 <button id="btnSaveSettings" class="btn btn-success">ذخیره همه تغییرات</button>
                 <button id="btnReturnToAppFromSettings" class="btn btn-secondary">بازگشت به برنامه</button>
             </div>
@@ -1375,14 +1527,6 @@ function buildPageHTML() {
 }
 
 function buildPlanningPage() {
-    const pageActionsFooterHTML = `
-        <div class="page-actions-footer">
-            <button class="btn btn-warning btn-show-help">راهنما</button>
-            <span class="version-tag"></span>
-            <button class="btn btn-secondary btn-show-settings">تنظیمات</button>
-        </div>
-    `;
-
     document.getElementById('page-planning').innerHTML = `
         <div class="page-layout-container">
             <div class="planning-column">
@@ -1431,13 +1575,13 @@ function buildPlanningPage() {
             </div>
 
             <div class="planning-column">
-                <div class="list-section">
+                <div class="list-section" style="flex-shrink: 0;">
                     <h2 id="productionPlanTitle">برنامه تولید و تحلیل کسری</h2>
                     <div class="filter-container">
                         <input type="checkbox" id="planViewFilterCheckbox" checked>
                         <label for="planViewFilterCheckbox">فقط نمایش محصولات موجود در این سفارش</label>
                     </div>
-                    <div id="productionPlanContainer" style="flex-grow: 1; overflow-y: auto;"></div>
+                    <div id="productionPlanContainer"></div>
                     <div class="form-buttons-container" style="margin-top: auto; padding-top: 15px;">
                         <button id="calculateShortageBtn" class="btn btn-success btn-main-action" disabled>محاسبه دستی کسری</button>
                     </div>
@@ -1445,16 +1589,15 @@ function buildPlanningPage() {
 
                 <div id="shortageResultSection" class="results-section" style="display:none;">
                     <h2 id="shortageReportTitle">گزارش کسری مواد اولیه</h2>
-                    <div class="filter-container">
+                    <div class="filter-container" style="flex-shrink: 0;">
                         <input type="checkbox" id="shortageOnlyCheckbox" onchange="toggleShortageReportFilter()" checked>
                         <label for="shortageOnlyCheckbox">فقط نمایش موارد دارای کسری</label>
                     </div>
-                    <div class="table-container" id="shortageResultContainer"></div>
-                    <div class="nav-buttons">
+                    <div class="table-container" id="shortageResultContainer" style="margin-top: 0;"></div>
+                    <div class="nav-buttons print-hide" style="flex-shrink: 0;">
                          <button onclick="window.print()" class="btn btn-primary">چاپ گزارش</button>
                     </div>
                 </div>
-                ${pageActionsFooterHTML}
             </div>
         </div>
 
@@ -1475,17 +1618,14 @@ function buildPlanningPage() {
                         <div class="input-item"><label>ضخامت (م.م):</label><select id="partSheetThickness"></select></div>
                         <div class="input-item"><label>طول (م.م):</label><input type="number" id="partLength" min="1"></div>
                         <div class="input-item"><label>عرض (م.م):</label><input type="number" id="partWidth" min="1"></div>
+                        <div class="input-item"><label>عرض کویل ایده آل (م.م):</label><select id="partIdealCoilSelect"></select></div>
                     </div>
-                    <h4>کویل ایده‌آل برای این قطعه:</h4>
-                    <div class="input-grid" style="grid-template-columns: 1fr; background: #f1f3f5; padding: 10px; border-radius: 5px;">
-                        <div class="input-item"><label>انتخاب از کویل‌های موجود:</label><select id="partIdealCoilSelect"></select></div>
-                    </div>
-                    <div class="form-buttons-container">
+                    <div class="form-buttons-container" id="partsModal-buttons">
                         <button id="partSubmitBtn" class="btn btn-success">افزودن قطعه</button>
                         <button id="partCancelBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                     </div>
                 </div>
-                <hr style="margin: 15px 0;">
+                <hr style="margin: 10px 0;">
                 <div id="partsListForProduct" class="table-container"></div>
             </div>
         </div>
@@ -1493,16 +1633,6 @@ function buildPlanningPage() {
 }
 
 function bindEventListeners() {
-    // Event delegation for Help and Settings buttons
-    document.getElementById('mainContainer').addEventListener('click', (event) => {
-        if (event.target.classList.contains('btn-show-help')) {
-            showHelpModal();
-        }
-        if (event.target.classList.contains('btn-show-settings')) {
-            showSettingsPage();
-        }
-    });
-    
     // Modal & Help Triggers
     document.getElementById('logoAbout').addEventListener('click', showAboutModal);
     document.querySelectorAll('[data-modal-close]').forEach(btn => {
@@ -1596,6 +1726,7 @@ function bindEventListeners() {
 
 // --- UI & NAVIGATION (NEW TAB SYSTEM) ---
 function initializeTabs() {
+    // Main page tabs
     document.getElementById('tab-coils').addEventListener('click', () => showPage('page-coils'));
     document.getElementById('tab-sheets').addEventListener('click', () => {
          if (coils.length === 0) {
@@ -1604,11 +1735,16 @@ function initializeTabs() {
         }
         showPage('page-sheets');
     });
+    document.getElementById('tab-coil-analysis').addEventListener('click', () => showPage('page-coil-analysis'));
     document.getElementById('tab-work-sheets').addEventListener('click', () => {
         showPage('page-work-sheets');
         renderWipList(); // Always render fresh list on tab click
     });
     document.getElementById('tab-planning').addEventListener('click', () => switchToModule('planning'));
+
+    // New utility tabs
+    document.getElementById('tab-help').addEventListener('click', showHelpModal);
+    document.getElementById('tab-settings').addEventListener('click', showSettingsPage);
 }
 
 function switchToModule(moduleName) {
@@ -1649,9 +1785,7 @@ function showPage(pageId) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     const title = document.getElementById('main-title');
     const navTabs = document.querySelector('.nav-tabs');
-    navTabs.style.display = 'flex'; // Default to visible
-
-    const cuttingPages = ['page-coils', 'page-sheets', 'page-results'];
+    navTabs.style.display = 'flex';
 
     if (pageId === 'page-coils') {
         title.textContent = "مدیریت کویل‌های انبار";
@@ -1659,11 +1793,13 @@ function showPage(pageId) {
     } else if (pageId === 'page-sheets' || pageId === 'page-results') {
         title.textContent = "بهینه‌سازی برش ورق";
         document.getElementById('tab-sheets').classList.add('active');
-        // Additional logic for page-sheets if needed
         if (pageId === 'page-sheets') {
             updateSheetDependencies();
             handlePriorityChange();
         }
+    } else if (pageId === 'page-coil-analysis') {
+        title.textContent = "تحلیل کویل ایده‌آل برای خرید";
+        document.getElementById('tab-coil-analysis').classList.add('active');
     } else if (pageId === 'page-work-sheets') {
         title.textContent = "مدیریت قطعات پای کار (WIP)";
         document.getElementById('tab-work-sheets').classList.add('active');
@@ -1672,16 +1808,8 @@ function showPage(pageId) {
         document.getElementById('tab-planning').classList.add('active');
     } else if (pageId === 'page-settings') {
         title.textContent = 'تنظیمات برنامه';
-        navTabs.style.display = 'none'; // Hide tabs on settings page
+        document.getElementById('tab-settings').classList.add('active');
     }
-}
-
-function showSheetPage() { // This function is now just a wrapper for showPage
-    if (coils.length === 0) {
-        showAlert('ابتدا باید حداقل یک کویل اضافه کنید.');
-        return;
-    }
-    showPage('page-sheets');
 }
 
 function showResultsPage() {
@@ -1692,7 +1820,7 @@ function showSettingsPage() {
     showPage('page-settings');
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
-    document.getElementById('login-section').style.display = 'block';
+    document.getElementById('login-section').style.display = 'flex';
     document.getElementById('settings-section').style.display = 'none';
     const advancedFields = document.getElementById('advanced-settings-fields');
     if (advancedFields) {
@@ -1740,7 +1868,24 @@ function showAboutModal() {
 }
 
 function showHelpModal() {
+    const currentlyActive = document.querySelector('.nav-tab.active');
+    const helpTab = document.getElementById('tab-help');
+    
+    helpTab.classList.add('active');
     document.getElementById('helpModal').style.display = 'flex';
+    
+    const closeObserver = new MutationObserver((mutations) => {
+        for(let mutation of mutations) {
+            if (mutation.attributeName === 'style' && document.getElementById('helpModal').style.display === 'none') {
+                helpTab.classList.remove('active');
+                if(currentlyActive) currentlyActive.classList.add('active');
+                closeObserver.disconnect();
+                return;
+            }
+        }
+    });
+    
+    closeObserver.observe(document.getElementById('helpModal'), { attributes: true });
 }
 
 function closeHelpModal() {
@@ -2055,7 +2200,15 @@ function addSettingPrefix() {
 }
 
 function deleteSettingPrefix(key) {
-    if (confirm(`آیا از حذف این قانون پیش‌کد مطمئن هستید؟`)) {
+    const [type, feature] = key.split('-');
+    const isInUse = coils.some(coil => coil.type === type && coil.feature === feature);
+
+    if (isInUse) {
+        alert(`امکان حذف این قانون پیش‌کد وجود ندارد، زیرا توسط حداقل یک کویل در لیست کویل‌ها استفاده می‌شود.`);
+        return;
+    }
+
+    if (confirm(`آیا از حذف این قانون پیش‌کد (${type} - ${feature}) مطمئن هستید؟`)) {
         delete settings.companyCodePrefixes[key];
         renderSettingPrefixes();
     }
@@ -2084,22 +2237,95 @@ function startOver() {
         products = [];
         productionBatches = [];
         wipData = {};
+        analysisParts = [];
         selectedBatchId = null;
         localStorage.clear();
         initializeApp();
     }
 }
 
-function clearAllCoils() {
-    if (coils.length === 0) { 
-        alert("لیست کویل‌ها از قبل خالی است."); 
-        return; 
+async function clearAllCoils() {
+    if (coils.length === 0) {
+        alert("لیست کویل‌ها از قبل خالی است.");
+        return;
     }
-    if (confirm('آیا مطمئن هستید که می‌خواهید لیست تمام کویل‌ها را پاک کنید؟')) {
-        coils = [];
+
+    const bomRequiredSpecs = getAllBOMCoilSpecs();
+
+    // کویل‌ها را به دو دسته تقسیم می‌کنیم
+    const coilsToDelete = coils.filter(c => {
+        const spec = `${c.type}-${c.feature}-${c.thickness}-${c.width}`;
+        return !bomRequiredSpecs.has(spec);
+    });
+    
+    const protectedCoils = coils.filter(c => {
+        const spec = `${c.type}-${c.feature}-${c.thickness}-${c.width}`;
+        return bomRequiredSpecs.has(spec);
+    });
+
+    // اگر هیچ کویلی برای حذف وجود ندارد (همه محافظت شده هستند)
+    if (coilsToDelete.length === 0 && protectedCoils.length > 0) {
+        showAlert('تمام کویل‌های موجود به عنوان "کویل ایده‌آل" در بخش BOM تعریف شده‌اند و هیچ کویل آزادی برای حذف وجود ندارد.');
+        return;
+    }
+    
+    // ساخت پیام برای کاربر
+    let messageParts = [];
+    if (coilsToDelete.length > 0) {
+        messageParts.push(`✅ تعداد ${coilsToDelete.length} کویل آزاد که در هیچ محصولی استفاده نشده‌اند، آماده حذف هستند.`);
+    }
+
+    if (protectedCoils.length > 0) {
+        const relatedProducts = products.filter(p => 
+            p.parts.some(part => 
+                protectedCoils.some(c => 
+                    part.sheetType === c.type &&
+                    part.sheetFeature === c.feature &&
+                    part.thickness === c.thickness &&
+                    part.idealCoil?.width === c.width
+                )
+            )
+        );
+
+        const productNames = [...new Set(relatedProducts.map(p => `  - ${p.type} (مدل: ${p.model})`))].join('\n');
+        
+        messageParts.push(`\n\n⚠️ تعداد ${protectedCoils.length} کویل دیگر در محصولات زیر استفاده شده‌اند:
+${productNames}
+`);
+        messageParts.push(`❓ آیا مایلید **تمام محصولات و سپس تمام کویل‌ها** را حذف کنید؟`);
+    } else {
+        messageParts.push(`\n\n❓ آیا مایل به حذف کویل‌های آزاد هستید؟`);
+    }
+    
+    const userConfirmed = await showConfirmationModal(messageParts.join(''));
+
+    if (userConfirmed) {
+        let deletedProductsCount = 0;
+        let deletedCoilsCount = 0;
+
+        if (protectedCoils.length > 0) {
+            deletedProductsCount = products.length;
+            deletedCoilsCount = coils.length;
+            // همه محصولات و کویل‌ها حذف می‌شوند
+            products = [];
+            coils = [];
+        } else {
+            deletedCoilsCount = coilsToDelete.length;
+            // فقط کویل‌های آزاد حذف می‌شوند
+            coils = protectedCoils;
+        }
+
         saveDataToLocalStorage();
         renderCoilList();
-        alert('لیست کویل‌ها با موفقیت پاک شد.');
+        
+        let finalMessage = `عملیات پاکسازی با موفقیت انجام شد.\n- تعداد ${deletedCoilsCount} کویل حذف شد.`;
+        if (deletedProductsCount > 0) {
+            finalMessage += `\n- تعداد ${deletedProductsCount} محصول مرتبط نیز حذف شد.`;
+        }
+        alert(finalMessage);
+
+    } else {
+        alert('عملیات پاک کردن لغو شد.');
     }
 }
 
@@ -2282,9 +2508,9 @@ function importFromXLSX(type) {
 }
 
 async function processImportedBOM(data) {
-    // 1. Pre-processing and validation
+    // 1. Pre-processing for fatal errors and data collection
     const fatalErrors = [];
-    const importedProducts = {};
+    const rawPartsData = [];
 
     data.forEach((row, index) => {
         const rowIndex = index + 2;
@@ -2303,103 +2529,35 @@ async function processImportedBOM(data) {
         if (!/^\d{6,7}$/.test(part.code)) {
             fatalErrors.push(`ردیف ${rowIndex}: کد قطعه (${part.code}) باید 6 یا 7 رقمی باشد.`); return;
         }
-
-        const productKey = `${part.productType}-${part.productModel}`;
-        if (!importedProducts[productKey]) {
-            importedProducts[productKey] = { productType: part.productType, productModel: part.productModel, parts: [] };
-        }
-        importedProducts[productKey].parts.push(part);
+        rawPartsData.push(part);
     });
 
     if (fatalErrors.length > 0) {
         showAlert("ورود اطلاعات لغو شد. خطاهای زیر را در فایل اکسل برطرف کنید:\n\n" + fatalErrors.join("\n")); return;
     }
     
-    // 2. Product-level Validation
-    const validProductGroups = [];
-    const rejectedProductsInfo = [];
-    const skippedExistingProducts = [];
-    const uniqueMissingCoilSpecs = new Set();
-    const otherRejectionReasons = new Set();
-    const existingProductKeys = new Set(products.map(p => `${p.type}-${p.model}`));
-
-    Object.values(importedProducts).forEach(productGroup => {
-        const productKey = `${productGroup.productType}-${productGroup.productModel}`;
-        if (existingProductKeys.has(productKey)) {
-            skippedExistingProducts.push(productKey); return;
-        }
-
-        let isProductValid = true;
-        let reasonsForInvalidity = new Set();
-        const partCodesInThisGroup = new Set();
-        
-        for (const part of productGroup.parts) {
-            if (partCodesInThisGroup.has(part.code)) {
-                reasonsForInvalidity.add(`کد قطعه تکراری (${part.code}) در داخل این محصول.`);
-                otherRejectionReasons.add(`کد قطعه تکراری (${part.code}) در یک محصول.`);
-                isProductValid = false;
-            }
-            partCodesInThisGroup.add(part.code);
-
-            const hasMatchingCoil = coils.some(c => c.type === part.sheetType && c.feature === part.sheetFeature && c.thickness === part.thickness && c.width === part.idealCoilWidth);
-            if (!hasMatchingCoil) {
-                const specKey = `نوع: ${part.sheetType} | ویژگی: ${part.sheetFeature} | ضخامت: ${part.thickness} | عرض: ${part.idealCoilWidth}`;
-                uniqueMissingCoilSpecs.add(specKey); 
-                isProductValid = false;
-            }
-        }
-        
-        if (isProductValid) {
-            validProductGroups.push(productGroup);
-        } else {
-            rejectedProductsInfo.push({ name: productKey, reasons: [...reasonsForInvalidity] });
-        }
-    });
-
-    // 3. Construct and Display Confirmation
-    if (validProductGroups.length === 0 && rejectedProductsInfo.length === 0 && skippedExistingProducts.length === 0) {
-        alert("هیچ محصول جدیدی در فایل اکسل برای ورود یافت نشد."); return;
+    if (rawPartsData.length === 0) {
+        alert("هیچ داده معتبری برای ورود در فایل یافت نشد."); return;
     }
-
-    let summaryMessages = [];
-    if (validProductGroups.length > 0) summaryMessages.push(`✅ ${validProductGroups.length} محصول جدید آماده ورود هستند.`);
-    if (skippedExistingProducts.length > 0) summaryMessages.push(`\n⚠️ ${skippedExistingProducts.length} محصول به دلیل وجود در سیستم، نادیده گرفته شدند.`);
     
-    if (rejectedProductsInfo.length > 0) {
-        summaryMessages.push(`\n❌ ${rejectedProductsInfo.length} محصول به دلیل نقص‌های زیر وارد نخواهند شد:`);
-    }
-    if (uniqueMissingCoilSpecs.size > 0) {
-        const missingCoilsList = [...uniqueMissingCoilSpecs].map(spec => `  • ${spec}`).join('\n');
-        summaryMessages.push(`\n- کسری کویل‌های ایده‌آل زیر در انبار:\n${missingCoilsList}`);
-    }
-    if (otherRejectionReasons.size > 0) {
-        const otherReasonsList = [...otherRejectionReasons].map(reason => `  • ${reason}`).join('\n');
-        summaryMessages.push(`\n- سایر خطاها:\n${otherReasonsList}`);
-    }
-
-    if (validProductGroups.length === 0) {
-        showAlert("هیچ محصول جدید و معتبری برای ورود یافت نشد.\n\n" + summaryMessages.join('\n\n')); return;
-    }
-
-    summaryMessages.push("\n\n❓ آیا مایل به ادامه و ورود محصولات معتبر هستید؟");
-    
-    const userConfirmed = await showConfirmationModal(summaryMessages.join('\n'));
-    if (!userConfirmed) { alert("عملیات ورود اطلاعات لغو شد."); return; }
-    
-    tempImportData = validProductGroups.flatMap(group => group.parts);
+    // 2. Show filter modal to the user FIRST
+    tempImportData = rawPartsData;
     setupBomImportFilters();
     document.getElementById('importFilterModal').style.display = 'flex';
     
     const applyBtn = document.getElementById('applyImportFilterBtn');
     
-    const applyFilterHandler = () => {
+    const applyFilterHandler = async () => {
+        document.getElementById('importFilterModal').style.display = 'none';
+
+        // 3. Get user's selection and filter the data
         const selectedProductTypes = getSelectedFilterValues('productTypes', 'bom-');
         const selectedProductModels = getSelectedFilterValues('productModels', 'bom-');
         const selectedSheetTypes = getSelectedFilterValues('sheetTypes', 'bom-');
         const selectedSheetFeatures = getSelectedFilterValues('sheetFeatures', 'bom-');
         const selectedThicknesses = getSelectedFilterValues('thicknesses', 'bom-').map(t => parseFloat(t));
         
-        const finalPartsToImport = tempImportData.filter(part => {
+        const partsToValidate = tempImportData.filter(part => {
             const pTypeMatch = selectedProductTypes.length === 0 || selectedProductTypes.includes(part.productType);
             const pModelMatch = selectedProductModels.length === 0 || selectedProductModels.includes(part.productModel);
             const sTypeMatch = selectedSheetTypes.length === 0 || selectedSheetTypes.includes(part.sheetType);
@@ -2407,14 +2565,99 @@ async function processImportedBOM(data) {
             const sThickMatch = selectedThicknesses.length === 0 || selectedThicknesses.includes(part.thickness);
             return pTypeMatch && pModelMatch && sTypeMatch && sFeatureMatch && sThickMatch;
         });
+
+        if (partsToValidate.length === 0) {
+            alert("با توجه به فیلتر انتخابی، هیچ قطعه‌ای برای اعتبارسنجی و ورود وجود ندارد.");
+            tempImportData = []; currentImportType = null;
+            applyBtn.removeEventListener('click', applyFilterHandler);
+            return;
+        }
+
+        // 4. NOW, perform validation on the filtered data
+        const importedProducts = {};
+        partsToValidate.forEach(part => {
+             const productKey = `${part.productType}-${part.productModel}`;
+            if (!importedProducts[productKey]) {
+                importedProducts[productKey] = { productType: part.productType, productModel: part.productModel, parts: [] };
+            }
+            importedProducts[productKey].parts.push(part);
+        });
+
+        const validProductGroups = [];
+        const rejectedProductsInfo = [];
+        const skippedExistingProducts = [];
+        const uniqueMissingCoilSpecs = new Set();
+        const otherRejectionReasons = new Set();
+        const existingProductKeys = new Set(products.map(p => `${p.type}-${p.model}`));
+
+        Object.values(importedProducts).forEach(productGroup => {
+            const productKey = `${productGroup.productType}-${productGroup.productModel}`;
+            if (existingProductKeys.has(productKey)) {
+                skippedExistingProducts.push(productKey); return;
+            }
+
+            let isProductValid = true;
+            let reasonsForInvalidity = new Set();
+            const partCodesInThisGroup = new Set();
+            
+            for (const part of productGroup.parts) {
+                if (partCodesInThisGroup.has(part.code)) {
+                    reasonsForInvalidity.add(`کد قطعه تکراری (${part.code}) در داخل این محصول.`);
+                    otherRejectionReasons.add(`کد قطعه تکراری (${part.code}) در یک محصول.`);
+                    isProductValid = false;
+                }
+                partCodesInThisGroup.add(part.code);
+
+                const hasMatchingCoil = coils.some(c => c.type === part.sheetType && c.feature === part.sheetFeature && c.thickness === part.thickness && c.width === part.idealCoilWidth);
+                if (!hasMatchingCoil) {
+                    const specKey = `نوع: ${part.sheetType} | ویژگی: ${part.sheetFeature} | ضخامت: ${part.thickness} | عرض: ${part.idealCoilWidth}`;
+                    uniqueMissingCoilSpecs.add(specKey); 
+                    isProductValid = false;
+                }
+            }
+            
+            if (isProductValid) {
+                validProductGroups.push(productGroup);
+            } else {
+                rejectedProductsInfo.push({ name: productKey, reasons: [...reasonsForInvalidity] });
+            }
+        });
+
+        // 5. Construct and Display Confirmation
+        if (validProductGroups.length === 0 && rejectedProductsInfo.length === 0 && skippedExistingProducts.length === 0) {
+            alert("هیچ محصول جدیدی در موارد انتخاب شده برای ورود یافت نشد."); return;
+        }
+
+        let summaryMessages = [`شما ${Object.keys(importedProducts).length} محصول را برای ورود انتخاب کرده‌اید. نتایج اعتبارسنجی:`];
+        if (validProductGroups.length > 0) summaryMessages.push(`\n✅ ${validProductGroups.length} محصول جدید آماده ورود هستند.`);
+        if (skippedExistingProducts.length > 0) summaryMessages.push(`\n⚠️ ${skippedExistingProducts.length} محصول به دلیل وجود در سیستم، نادیده گرفته شدند.`);
         
-        document.getElementById('importFilterModal').style.display = 'none';
-        tempImportData = []; currentImportType = null;
+        if (rejectedProductsInfo.length > 0) {
+            summaryMessages.push(`\n❌ ${rejectedProductsInfo.length} محصول به دلیل نقص‌های زیر وارد نخواهند شد:`);
+        }
+        if (uniqueMissingCoilSpecs.size > 0) {
+            const missingCoilsList = [...uniqueMissingCoilSpecs].map(spec => `  • ${spec}`).join('\n');
+            summaryMessages.push(`\n- کسری کویل‌های ایده‌آل زیر در انبار:\n${missingCoilsList}`);
+        }
+        if (otherRejectionReasons.size > 0) {
+            const otherReasonsList = [...otherRejectionReasons].map(reason => `  • ${reason}`).join('\n');
+            summaryMessages.push(`\n- سایر خطاها:\n${otherReasonsList}`);
+        }
+
+        if (validProductGroups.length === 0) {
+            showAlert("هیچ محصول جدید و معتبری برای ورود یافت نشد.\n\n" + summaryMessages.join('\n\n')); return;
+        }
+
+        summaryMessages.push("\n\n❓ آیا مایل به ادامه و ورود محصولات معتبر هستید؟");
         
-        if (finalPartsToImport.length === 0) { alert("با توجه به فیلتر انتخابی، هیچ قطعه‌ای برای ورود وجود ندارد."); return; }
-        
+        const userConfirmed = await showConfirmationModal(summaryMessages.join('\n'));
+        if (!userConfirmed) { alert("عملیات ورود اطلاعات لغو شد."); return; }
+
+        // 6. Final Import
         let addedProductsCount = 0; let addedPartsCount = 0;
         const processedProducts = new Set();
+        
+        const finalPartsToImport = validProductGroups.flatMap(group => group.parts);
 
         finalPartsToImport.forEach(partData => {
             let product = products.find(p => p.type === partData.productType && p.model === partData.productModel);
@@ -2436,15 +2679,15 @@ async function processImportedBOM(data) {
         });
 
         saveDataToLocalStorage();
-        
         buildPlanningPage(); 
         bindPlanningEventListeners();
         populateFormDropdowns();
         renderProductsList();
         renderBatchesList();
         renderProductionPlan();
-
         alert(`عملیات با موفقیت انجام شد.\n${addedProductsCount} محصول جدید با مجموع ${addedPartsCount} قطعه اضافه شد.`);
+        
+        tempImportData = []; currentImportType = null;
         applyBtn.removeEventListener('click', applyFilterHandler);
     };
 
@@ -2938,7 +3181,7 @@ function createFilterCheckboxGroup(groupName, items, prefix = '') {
     const container = document.querySelector(`[data-filter-group="${groupName}"]`);
     if (!container) return;
     
-    const h3 = container.querySelector('h3');
+    const h3 = container.querySelector('h3') || container.querySelector('h4');
     container.innerHTML = '';
     if (h3) {
         container.appendChild(h3);
@@ -2993,6 +3236,90 @@ function getSelectedFilterValues(groupName, prefix = '') {
     return Array.from(checkedCheckboxes).map(cb => cb.value);
 }
 
+function selectCoil(coilId) {
+    // 1. پیدا کردن المنت اسکرول و ذخیره موقعیت فعلی آن
+    const scrollWrapper = document.querySelector('#coilList .table-scroll-wrapper');
+    const currentScrollTop = scrollWrapper ? scrollWrapper.scrollTop : 0;
+
+    // 2. منطق انتخاب یا لغو انتخاب کویل (بدون تغییر)
+    if (selectedCoilId === coilId) {
+        selectedCoilId = null;
+    } else {
+        selectedCoilId = coilId;
+    }
+
+    // 3. رندر مجدد لیست‌ها (بدون تغییر)
+    renderCoilList();
+    renderCoilUsageDetails(selectedCoilId);
+
+    // 4. بازیابی موقعیت اسکرول
+    const newScrollWrapper = document.querySelector('#coilList .table-scroll-wrapper');
+    if (newScrollWrapper) {
+        newScrollWrapper.scrollTop = currentScrollTop;
+    }
+}
+
+function renderCoilUsageDetails(coilId) {
+    const container = document.getElementById('coilUsageDetailsContainer');
+    if (!coilId) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">برای مشاهده جزئیات، روی یک ردیف در جدول کویل‌ها کلیک کنید.</p>';
+        return;
+    }
+
+    const coil = coils.find(c => c.id === coilId);
+    if (!coil) return;
+
+    const foundParts = [];
+    products.forEach(product => {
+        product.parts.forEach(part => {
+            if (part.sheetType === coil.type &&
+                part.sheetFeature === coil.feature &&
+                part.thickness === coil.thickness &&
+                part.idealCoil?.width === coil.width) {
+                
+                foundParts.push({
+                    productName: `${product.type} - مدل ${product.model}`,
+                    partName: part.name,
+                    partCode: part.code,
+                    dimensions: `${part.length}×${part.width}`,
+                    waste: (part.wastePercentage || 0).toFixed(2)
+                });
+            }
+        });
+    });
+
+    if (foundParts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">هیچ قطعه‌ای در محصولات (BOM) از این کویل به عنوان کویل ایده‌آل استفاده نمی‌کند.</p>';
+        return;
+    }
+
+    const tableRows = foundParts.map(p => `
+        <tr>
+            <td>${p.productName}</td>
+            <td>${p.partName}</td>
+            <td>${p.partCode}</td>
+            <td>${p.dimensions}</td>
+            <td>${p.waste}%</td>
+        </tr>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="table-scroll-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>محصول</th>
+                        <th>نام قطعه</th>
+                        <th>کد قطعه</th>
+                        <th>ابعاد (م.م)</th>
+                        <th>ضایعات %</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+        </div>`;
+}
+
 // --- CRUD & RENDER FUNCTIONS (Coil, Sheet) ---
 function saveCoil() {
     const type = document.getElementById('coilType').value;
@@ -3008,7 +3335,10 @@ function saveCoil() {
     if (!/^\d{4}$/.test(suffix)) { showAlert('بخش اول کد انبار باید یک عدد ۴ رقمی باشد.'); return; }
     const companyCode = suffix + prefix;
     if (!feature) { showAlert('لطفاً یک ویژگی معتبر انتخاب کنید.'); return; }
-    if (!weight || !width || !thickness || !density || weight <= 0 || width <= 0 || thickness <= 0 || density <= 0) { showAlert('لطفاً تمام مشخصات کویل را با مقادیر مثبت وارد کنید.'); return; }
+    if (isNaN(weight) || weight < 0 || isNaN(width) || width <= 0 || isNaN(thickness) || thickness <= 0 || isNaN(density) || density <= 0) {
+        showAlert('لطفاً تمام مشخصات کویل را به درستی وارد کنید. وزن می‌تواند صفر باشد ولی سایر مقادیر باید مثبت باشند.');
+        return;
+    }
     if (width > 2500) { showAlert('عرض کویل نمی‌تواند بیشتر از 2500 میلی‌متر باشد.'); return; }
     if (thickness > 7) { showAlert('ضخامت کویل نباید بیشتر از 7 میلی‌متر باشد.'); return; }
     if (coils.some(c => c.id !== editingCoilId && c.companyCode === companyCode)) { showAlert('کد انبار وارد شده برای کویل دیگری وجود دارد.'); return; }
@@ -3024,16 +3354,29 @@ function saveCoil() {
     }
     
     editingCoilId = null;
+	selectedCoilId = null;
     resetCoilForm();
     renderCoilList();
+	renderCoilUsageDetails(null);
     saveDataToLocalStorage();
 }
 
 function editCoil(id) {
     const coilToEdit = coils.find(c => c.id === id);
-    if (!coilToEdit) {
+    if (!coilToEdit) return;
+
+    // --- CORRECTED LOGIC ---
+    // Use the new, more comprehensive function to check against the entire BOM
+    const bomRequiredSpecs = getAllBOMCoilSpecs();
+    const coilSpec = `${coilToEdit.type}-${coilToEdit.feature}-${coilToEdit.thickness}-${coilToEdit.width}`;
+
+    if (bomRequiredSpecs.has(coilSpec)) {
+        // Updated and clearer error message
+        showAlert('امکان ویرایش این کویل وجود ندارد. مشخصات این کویل (نوع، ویژگی، ضخامت و عرض) به عنوان "کویل ایده‌آل" برای حداقل یک قطعه در بخش "برنامه‌ریزی تولید" (BOM) تعریف شده است.');
         return;
     }
+    // --- END OF CORRECTION ---
+
     editingCoilId = id;
     document.getElementById('coilType').value = coilToEdit.type;
     updateCoilFeatureDropdown();
@@ -3054,17 +3397,68 @@ function editCoil(id) {
     document.querySelector('#page-coils .form-section').scrollIntoView({ behavior: 'smooth' });
 }
 
-function deleteCoil(id) {
-    if (confirm('آیا از حذف این کویل مطمئن هستید؟')) {
+async function deleteCoil(id) {
+    const coilToDelete = coils.find(c => c.id === id);
+    if (!coilToDelete) return;
+
+    const bomRequiredSpecs = getAllBOMCoilSpecs();
+    const coilSpec = `${coilToDelete.type}-${coilToDelete.feature}-${coilToDelete.thickness}-${coilToDelete.width}`;
+
+    // سناریوی ۱: کویل در هیچ BOM ای استفاده نشده است (حذف ساده)
+    if (!bomRequiredSpecs.has(coilSpec)) {
+        if (confirm('آیا از حذف این کویل مطمئن هستید؟')) {
+            coils = coils.filter(c => c.id !== id);
+            renderCoilList();
+            saveDataToLocalStorage();
+        }
+        return; // پایان عملیات
+    }
+
+    // سناریوی ۲: کویل در BOM استفاده شده است (حذف هوشمند)
+    // ابتدا محصولاتی که از این کویل استفاده می‌کنند را پیدا می‌کنیم
+    const relatedProducts = products.filter(product =>
+        product.parts.some(part =>
+            part.sheetType === coilToDelete.type &&
+            part.sheetFeature === coilToDelete.feature &&
+            part.thickness === coilToDelete.thickness &&
+            part.idealCoil?.width === coilToDelete.width
+        )
+    );
+
+    const productNames = relatedProducts.map(p => `  - ${p.type} (مدل: ${p.model})`).join('\n');
+    const message = `
+هشدار: این کویل به عنوان "کویل ایده‌آل" برای قطعات در محصولات زیر تعریف شده است:
+${productNames}
+
+آیا مایلید ابتدا تمام این محصولات را حذف کرده و سپس این کویل را حذف کنید؟
+(این عملیات غیرقابل بازگشت است)
+    `;
+
+    // از کاربر تایید دو مرحله‌ای می‌گیریم
+    const userConfirmed = await showConfirmationModal(message);
+
+    if (userConfirmed) {
+        // ۱. ابتدا محصولات مرتبط را حذف می‌کنیم
+        const relatedProductIds = new Set(relatedProducts.map(p => p.id));
+        products = products.filter(p => !relatedProductIds.has(p.id));
+        
+        // ۲. سپس کویل را حذف می‌کنیم
         coils = coils.filter(c => c.id !== id);
-        renderCoilList();
+        
+        // ۳. ذخیره و رندر مجدد
         saveDataToLocalStorage();
+        renderCoilList();
+        
+        alert(`عملیات با موفقیت انجام شد:\n- تعداد ${relatedProducts.length} محصول مرتبط حذف شد.\n- کویل مورد نظر حذف شد.`);
+    } else {
+        alert('عملیات حذف لغو شد.');
     }
 }
-
 function cancelCoilEdit() {
     editingCoilId = null;
+	selectedCoilId = null;
     resetCoilForm();
+	renderCoilUsageDetails(null);
 }
 
 function resetCoilForm() {
@@ -3096,9 +3490,9 @@ function renderCoilList() {
                 <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'companyCode' ? 'active' : ''}" data-action="sort" data-sort-key="companyCode">کد انبار ${coilListState.sortKey === 'companyCode' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                 <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'type' ? 'active' : ''}" data-action="sort" data-sort-key="type">نوع ${coilListState.sortKey === 'type' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                 <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'feature' ? 'active' : ''}" data-action="sort" data-sort-key="feature">ویژگی ${coilListState.sortKey === 'feature' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'thickness' ? 'active' : ''}" data-action="sort" data-sort-key="thickness">ضخامت ${coilListState.sortKey === 'thickness' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'width' ? 'active' : ''}" data-action="sort" data-sort-key="width">عرض ${coilListState.sortKey === 'width' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                 <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'originalWeight' ? 'active' : ''}" data-action="sort" data-sort-key="originalWeight">وزن ${coilListState.sortKey === 'originalWeight' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'width' ? 'active' : ''}" data-action="sort" data-sort-key="width">عرض ${coilListState.sortKey === 'width' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                <button class="btn btn-secondary sort-btn ${coilListState.sortKey === 'thickness' ? 'active' : ''}" data-action="sort" data-sort-key="thickness">ضخامت ${coilListState.sortKey === 'thickness' ? (coilListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
             </div>
         </div>`;
     
@@ -3107,13 +3501,25 @@ function renderCoilList() {
         tableHTML = '<div class="table-scroll-wrapper"><p style="text-align: center; padding: 20px;">هیچ کویلی با این مشخصات یافت نشد.</p></div>';
     } else {
         const tableRows = displayCoils.map(coil => {
-            const displayCode = (coil.companyCode && coil.companyCode.length === 8) ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>` : coil.companyCode; 
-            return `<tr><td>${displayCode}</td><td>${coil.type}</td><td>${coil.feature || '-'}</td><td>${coil.originalWeight}</td><td>${coil.width}</td><td>${coil.thickness}</td><td class="operations-cell"><button class="btn btn-warning" data-action="edit" data-id="${coil.id}">ویرایش</button><button class="btn btn-danger" data-action="delete" data-id="${coil.id}">حذف</button></td></tr>`;
-        }).join('');
+                const displayCode = (coil.companyCode && coil.companyCode.length === 8) ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>` : coil.companyCode; 
+				const isActive = coil.id === selectedCoilId;
+				return `<tr data-id="${coil.id}" class="${isActive ? 'active-coil' : ''}">
+							<td>${displayCode}</td>
+							<td>${coil.type}</td>
+							<td>${coil.feature || '-'}</td>
+							<td>${coil.originalWeight}</td>
+							<td>${coil.width}</td>
+							<td>${coil.thickness}</td>
+							<td class="operations-cell">
+								<button class="btn btn-warning" data-action="edit" data-id="${coil.id}">ویرایش</button>
+								<button class="btn btn-danger" data-action="delete" data-id="${coil.id}">حذف</button>
+							</td>
+						</tr>`;
+				}).join('');
         tableHTML = `
             <div class="table-scroll-wrapper">
                 <table>
-                    <thead><tr><th>کد انبار</th><th>نوع</th><th>ویژگی</th><th>وزن (ک.گ)</th><th>عرض (م.م)</th><th>ضخامت (م.م)</th><th>عملیات</th></tr></thead>
+                    <thead><tr><th>کد انبار</th><th>نوع</th><th>ویژگی</th><th>وزن (ک.گ)</th><th>عرض (م.م)</th><th>ضخامت (م.م)</th><th class="print-hide">عملیات</th></tr></thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>`;
@@ -3219,6 +3625,7 @@ function updateAvailableThicknesses() {
 
     if (!selectedFeature) {
         populateSelectWithOptions(thicknessSelect, []);
+        renderMatchingCoilsListForOrderList();
         return;
     }
     
@@ -3228,24 +3635,87 @@ function updateAvailableThicknesses() {
     const uniqueThicknesses = [...new Set(relevantThicknesses)].sort((a, b) => a - b);
     
     populateSelectWithOptions(thicknessSelect, uniqueThicknesses);
+    renderMatchingCoilsListForOrderList();
 }
+
+function getVisibleSheetOrders() {
+    let displayOrders = JSON.parse(JSON.stringify(sheetOrders));
+    displayOrders.forEach(order => {
+        const density = settings.densities[order.type];
+        order.calculatedWeight = density ? (order.length * order.width * order.thickness * density) / 1000000 : 0;
+    });
+    const searchableKeys = ['companyCode', 'type', 'feature', 'thickness', 'length', 'width', 'calculatedWeight'];
+    displayOrders = filterData(displayOrders, sheetOrdersListState.searchTerm, searchableKeys);
+    sortData(displayOrders, sheetOrdersListState.sortKey, sheetOrdersListState.sortDir);
+    return displayOrders;
+}
+
+function renderMatchingCoilsListForOrderList() {
+    const container = document.getElementById('matchingCoilsContainer');
+    if (!container) return;
+
+    const visibleOrders = getVisibleSheetOrders();
+
+    if (visibleOrders.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">ابتدا قطعات را به لیست ابعاد برش اضافه کنید یا فیلتر را تغییر دهید.</p>';
+        return;
+    }
+
+    const requiredSpecs = new Map();
+    // Use the *visible* and *sorted* orders to determine the display order
+    visibleOrders.forEach(order => {
+        const key = `${order.type}-${order.feature}-${order.thickness}`;
+        if (!requiredSpecs.has(key)) {
+            requiredSpecs.set(key, { type: order.type, feature: order.feature, thickness: order.thickness });
+        }
+    });
+    
+    let html = '';
+    let foundAnyCoils = false;
+
+    // Iterate through the map to maintain the order derived from the visible list
+    requiredSpecs.forEach(spec => {
+        const matching = coils.filter(c =>
+            c.type === spec.type &&
+            c.feature === spec.feature &&
+            c.thickness === spec.thickness
+        );
+
+        if (matching.length > 0) {
+            foundAnyCoils = true;
+            matching.sort((a, b) => a.width - b.width);
+            
+            html += `<div style="margin-bottom: 12px;">`;
+            html += `<strong style="font-size: 1em; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 4px; display: block;">ورق: ${spec.type} / ${spec.feature} / ${spec.thickness}mm</strong>`;
+            
+            matching.forEach(coil => {
+                const displayCode = (coil.companyCode && coil.companyCode.length === 8) 
+                    ? `${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}` 
+                    : coil.companyCode;
+                html += `
+                    <div class="matching-coil-card">
+                        <p><strong>کد انبار:</strong> <span dir="ltr">${displayCode}</span></p>
+                        <p><strong>عرض:</strong> ${coil.width} mm | <strong>وزن:</strong> ${coil.weight} kg</p>
+                    </div>`;
+            });
+            
+            html += `</div>`;
+        }
+    });
+
+    if (!foundAnyCoils) {
+        container.innerHTML = '<p style="text-align: center; color: #dc3545; margin-top: 20px;">هیچ کویل منطبقی برای قطعات موجود در لیست یافت نشد.</p>';
+    } else {
+        container.innerHTML = html;
+    }
+}
+
 
 function renderSheetOrderList() {
     const container = document.getElementById('sheetOrderList');
     if (!container) return;
-
-    let displayOrders = JSON.parse(JSON.stringify(sheetOrders));
     
-    // Calculate weight for each order (on the fly)
-    displayOrders.forEach(order => {
-        const density = settings.densities[order.type];
-        // Formula: (L_mm * W_mm * T_mm * density_g/cm³) / 1,000,000 = weight_kg
-        order.calculatedWeight = density ? (order.length * order.width * order.thickness * density) / 1000000 : 0;
-    });
-
-    const searchableKeys = ['companyCode', 'type', 'feature', 'thickness', 'length', 'width', 'calculatedWeight'];
-    displayOrders = filterData(displayOrders, sheetOrdersListState.searchTerm, searchableKeys);
-    sortData(displayOrders, sheetOrdersListState.sortKey, sheetOrdersListState.sortDir);
+    const displayOrders = getVisibleSheetOrders();
 
     const controlsHTML = `
         <div class="table-controls" data-list-id="sheetOrderList">
@@ -3289,7 +3759,7 @@ function renderSheetOrderList() {
                             <th>ضخامت</th>
                             <th>ابعاد (م.م)</th>
                             <th>وزن (ک.گ)</th>
-                            <th>عملیات</th>
+                            <th class="print-hide">عملیات</th>
                         </tr>
                     </thead>
                     <tbody>${tableRows}</tbody>
@@ -3298,6 +3768,7 @@ function renderSheetOrderList() {
     }
     container.innerHTML = controlsHTML + tableHTML;
     handlePriorityChange();
+    renderMatchingCoilsListForOrderList();
 }
 
 
@@ -3346,12 +3817,20 @@ function handleTableSearch(event) {
 }
 
 function handleCoilListActions(event) {
-    const target = event.target.closest('button');
-    if (!target) return;
-    const { action, id, sortKey } = target.dataset;
-    if (action === 'edit') editCoil(id);
-    else if (action === 'delete') deleteCoil(id);
-    else if (action === 'sort') handleTableSort(coilListState, renderCoilList, sortKey);
+    const button = event.target.closest('button');
+    if (button) { // اگر روی دکمه کلیک شد
+        const { action, id, sortKey } = button.dataset;
+        if (action === 'edit') editCoil(id);
+        else if (action === 'delete') deleteCoil(id);
+        else if (action === 'sort') handleTableSort(coilListState, renderCoilList, sortKey);
+        return; // از ادامه اجرای تابع جلوگیری کن
+    }
+    
+    // این بخش جدید است: اگر روی خود ردیف یا سلول‌های آن کلیک شد
+    const row = event.target.closest('tr');
+    if (row && row.dataset.id) {
+        selectCoil(row.dataset.id);
+    }
 }
 
 function handleSheetOrderListActions(event) {
@@ -3403,6 +3882,24 @@ function runOptimization() {
     
     const priority = document.getElementById('optimizationPriority').value;
     const prioritizedSheetId = document.getElementById('prioritizedSheet').value;
+    const useStockOnly = document.getElementById('useStockOnlyCheckbox').checked;
+    
+    // --- START OF NEW LOGIC (1/3): Read checkbox and add validation ---
+    const enableSlitting = document.getElementById('enableSlittingOptimizationCheckbox').checked;
+
+    if (enableSlitting) {
+        if (sheetOrders.length !== 2) {
+            showAlert('خطا: برای فعال‌سازی برش طولی، لیست ابعاد برش باید دقیقا شامل ۲ قطعه باشد.');
+            return;
+        }
+        const firstOrder = sheetOrders[0];
+        const secondOrder = sheetOrders[1];
+        if (firstOrder.type !== secondOrder.type || firstOrder.feature !== secondOrder.feature || firstOrder.thickness !== secondOrder.thickness) {
+            showAlert('خطا: برای فعال‌سازی برش طولی، هر دو قطعه باید دارای نوع، ویژگی و ضخامت یکسان باشند.');
+            return;
+        }
+    }
+    // --- END OF NEW LOGIC (1/3) ---
 
     if (priority === 'maximize_part' && !prioritizedSheetId) {
         showAlert('برای اولویت‌بندی بر اساس تولید حداکثری، لطفاً یک قطعه خاص را انتخاب کنید.');
@@ -3413,7 +3910,11 @@ function runOptimization() {
     resultsContainer.innerHTML = '<h2>نتایج: طرح‌های برش بهینه</h2><p>در حال پردازش...</p>';
 
     setTimeout(() => {
-        const availableCoils = JSON.parse(JSON.stringify(coils));
+        let availableCoils = JSON.parse(JSON.stringify(coils));
+        if (useStockOnly) {
+            availableCoils = availableCoils.filter(c => c.weight > 0);
+        }
+
         const pendingOrders = JSON.parse(JSON.stringify(sheetOrders));
         resultsContainer.innerHTML = '<h2>نتایج: طرح‌های برش بهینه</h2>';
         
@@ -3441,11 +3942,25 @@ function runOptimization() {
             let allPossiblePlans = [];
             const planSignatures = new Set();
             for (const coil of coilsInGroup) {
+                // --- START OF NEW LOGIC (2/3): Find and add slitting patterns ---
+                if (enableSlitting && ordersInGroup.length === 2) {
+                    const slittingPatterns = findSlittingPatternsForOptimization(ordersInGroup[0], ordersInGroup[1], coil);
+                    for (const pattern of slittingPatterns) {
+                         const coilLengthMm = calculateCoilLength(coil);
+                         const cutsPossible = coil.weight > 0 ? Math.floor(coilLengthMm / pattern.cutLength) : 0;
+                         if (cutsPossible > 0 || coil.weight <= 0) {
+                            allPossiblePlans.push({ coil, pattern, wastePercentage: pattern.wastePercentage, cutsPossible });
+                         }
+                    }
+                }
+                // --- END OF NEW LOGIC (2/3) ---
+
                 const patternsForThisCoil = findAllWidthPatterns(ordersInGroup, coil.width);
                 for (const pattern of patternsForThisCoil) {
                     const coilLengthMm = calculateCoilLength(coil);
-                    const cutsPossible = Math.floor(coilLengthMm / pattern.cutLength);
-                    if (cutsPossible > 0) {
+                    const cutsPossible = coil.weight > 0 ? Math.floor(coilLengthMm / pattern.cutLength) : 0;
+                    
+                    if (cutsPossible > 0 || coil.weight <= 0) {
                         const usefulArea = pattern.sheets.reduce((sum, s) => sum + (s.length * s.width * s.countInPattern), 0);
                         const consumedArea = pattern.cutLength * coil.width;
                         const wastePercentage = consumedArea > 0 ? ((consumedArea - usefulArea) / consumedArea) * 100 : 0;
@@ -3460,6 +3975,7 @@ function runOptimization() {
 
             let sortedPlans = allPossiblePlans.filter(plan => plan.wastePercentage <= maxWastePercentage);
             
+            // ... (بقیه تابع بدون تغییر باقی می‌ماند)
             switch (priority) {
                 case 'low_weight_coils':
                     sortedPlans.sort((a, b) => {
@@ -3469,6 +3985,7 @@ function runOptimization() {
                     break;
                 case 'maximize_part':
                     const getPrioritizedCount = (plan) => {
+                        if (plan.pattern.isSlit) return 0; // Slitting plans don't get prioritized for now
                         const sheetInfo = plan.pattern.sheets.find(s => s.id === prioritizedSheetId);
                         return sheetInfo ? (plan.cutsPossible * sheetInfo.countInPattern) : 0;
                     };
@@ -3500,43 +4017,141 @@ function runOptimization() {
         showResultsPage();
     }, 50);
 }
-
 function findAllWidthPatterns(orders, coilWidth) {
     const allPatterns = new Map();
+
     function findCombinations(startIndex, currentPattern) {
+        const patternCopy = JSON.parse(JSON.stringify(currentPattern));
+        
+        if (patternCopy.sheets.length > 0) {
+            addPattern(patternCopy);
+        }
+
         for (let i = startIndex; i < orders.length; i++) {
             const order = orders[i];
-            if (currentPattern.totalWidth + order.width <= coilWidth) {
-                const newPattern = JSON.parse(JSON.stringify(currentPattern));
+            
+            if (patternCopy.totalWidth + order.width <= coilWidth) {
+                const newPattern = JSON.parse(JSON.stringify(patternCopy));
                 newPattern.sheets.push({ ...order, useDim: order.width, otherDim: order.length, orientation: 'طولی' });
-                newPattern.totalWidth += order.width; addPattern(newPattern); findCombinations(i, newPattern);
+                newPattern.totalWidth += order.width;
+                findCombinations(i, newPattern);
             }
-            if (order.length !== order.width && currentPattern.totalWidth + order.length <= coilWidth) {
-                const newPattern = JSON.parse(JSON.stringify(currentPattern));
+            
+            if (order.length !== order.width && patternCopy.totalWidth + order.length <= coilWidth) {
+                const newPattern = JSON.parse(JSON.stringify(patternCopy));
                 newPattern.sheets.push({ ...order, useDim: order.length, otherDim: order.width, orientation: 'عرضی' });
-                newPattern.totalWidth += order.length; addPattern(newPattern); findCombinations(i, newPattern);
+                newPattern.totalWidth += order.length;
+                findCombinations(i, newPattern);
             }
         }
     }
+
     function addPattern(pattern) {
         const consolidatedSheets = {};
         pattern.sheets.forEach(sheet => {
             const key = `${sheet.id}-${sheet.orientation}`;
-            if (consolidatedSheets[key]) consolidatedSheets[key].countInPattern++;
-            else consolidatedSheets[key] = { ...sheet, countInPattern: 1 };
+            if (consolidatedSheets[key]) {
+                consolidatedSheets[key].countInPattern++;
+            } else {
+                consolidatedSheets[key] = { ...sheet, countInPattern: 1 };
+            }
         });
+
         const finalSheets = Object.values(consolidatedSheets);
         const signature = finalSheets.map(s => `${s.id}:${s.orientation}:${s.countInPattern}`).sort().join(';');
+        
         if (!allPatterns.has(signature)) {
-            let totalWidth = 0, cutLength = 0;
-            finalSheets.forEach(s => { totalWidth += s.useDim * s.countInPattern; cutLength = Math.max(cutLength, s.otherDim); });
-            allPatterns.set(signature, { sheets: finalSheets, totalWidth, cutLength, signature });
+            let totalUsedWidth = 0;
+            let maxCutLength = 0;
+            let totalUsefulArea = 0;
+            const uniquePartIds = new Set();
+
+            finalSheets.forEach(s => {
+                totalUsedWidth += s.useDim * s.countInPattern;
+                maxCutLength = Math.max(maxCutLength, s.otherDim);
+                totalUsefulArea += (s.length * s.width * s.countInPattern);
+                uniquePartIds.add(s.id);
+            });
+
+            const totalConsumedArea = totalUsedWidth * maxCutLength;
+            
+            const wastePercentage = totalConsumedArea > 0 
+                ? ((totalConsumedArea - totalUsefulArea) / totalConsumedArea) * 100 
+                : 0;
+
+            allPatterns.set(signature, { 
+                sheets: finalSheets, 
+                totalWidth: totalUsedWidth,
+                cutLength: maxCutLength,
+                wastePercentage: wastePercentage,
+                signature: signature,
+                uniquePartCount: uniquePartIds.size
+            });
         }
     }
+
     findCombinations(0, { sheets: [], totalWidth: 0 });
     return Array.from(allPatterns.values());
 }
 
+function findSlittingPatternsForOptimization(partA, partB, coil) {
+    let bestSlitLayout = { wastePercentage: Infinity };
+
+    const permutations = [[partA, partB], [partB, partA]];
+
+    for (const [p1, p2] of permutations) {
+        const fit1 = getSinglePartBestFit(p1, coil.width);
+        if (fit1.waste === Infinity) continue;
+
+        const virtualCoilWidth1 = fit1.usedWidth;
+        const remainingWidth = coil.width - virtualCoilWidth1;
+
+        if (remainingWidth > 0) {
+            const fit2 = getSinglePartBestFit(p2, remainingWidth);
+            if (fit2.waste !== Infinity) {
+                // --- START OF MAJOR CORRECTION ---
+                const virtualCoilWidth2 = remainingWidth; // Use the entire remaining width
+                const totalUsedWidth = virtualCoilWidth1 + fit2.usedWidth; // Used width is still sum of fits
+                const totalWaste = ((coil.width - totalUsedWidth) / coil.width) * 100;
+
+                if (totalWaste < bestSlitLayout.wastePercentage) {
+                    // 1. Calculate the weight for each virtual coil based on width ratio
+                    const weightRatio1 = virtualCoilWidth1 / coil.width;
+                    const weightRatio2 = virtualCoilWidth2 / coil.width;
+                    const virtualCoilWeight1 = coil.weight * weightRatio1;
+                    const virtualCoilWeight2 = coil.weight * weightRatio2;
+                    
+                    // 2. Calculate the length of each virtual coil independently
+                    const virtualCoilLength1 = calculateCoilLength({ ...coil, weight: virtualCoilWeight1, width: virtualCoilWidth1 });
+                    const virtualCoilLength2 = calculateCoilLength({ ...coil, weight: virtualCoilWeight2, width: virtualCoilWidth2 });
+
+                    // 3. Determine the cut length needed for each part's pattern
+                    const cutLength1 = fit1.orientation === 'طولی' ? fit1.originalLength : fit1.originalWidth;
+                    const cutLength2 = fit2.orientation === 'طولی' ? fit2.originalLength : fit2.originalWidth;
+
+                    // 4. Calculate cuts possible for EACH virtual coil
+                    const cutsPossible1 = cutLength1 > 0 ? Math.floor(virtualCoilLength1 / cutLength1) : 0;
+                    const cutsPossible2 = cutLength2 > 0 ? Math.floor(virtualCoilLength2 / cutLength2) : 0;
+
+                    bestSlitLayout = {
+                        sheets: [
+                            { ...fit1, virtualCoilWidth: virtualCoilWidth1, cutsPossible: cutsPossible1, cutLength: cutLength1 },
+                            { ...fit2, virtualCoilWidth: virtualCoilWidth2, cutsPossible: cutsPossible2, cutLength: cutLength2 }
+                        ],
+                        totalWidth: totalUsedWidth,
+                        cutLength: Math.max(cutLength1, cutLength2), // Overall cut length is the max
+                        wastePercentage: totalWaste,
+                        isSlit: true,
+                        signature: `slit;${p1.id};${p2.id}`
+                    };
+                }
+                // --- END OF MAJOR CORRECTION ---
+            }
+        }
+    }
+    // We don't need the cutsPossible on the main plan object anymore for slitting
+    return bestSlitLayout.wastePercentage !== Infinity ? [{...bestSlitLayout, cutsPossible: 0 }] : [];
+}
 function calculateCoilLength(coil) {
     if (coil.weight <= 0) return 0;
     const coilVolCm3 = (coil.weight * 1000) / coil.density;
@@ -3548,16 +4163,75 @@ function createPlanCard(plan, priority, prioritizedSheetId) {
     card.className = 'result-card';
     const { coil, pattern, wastePercentage, cutsPossible } = plan;
 
-    const sheetListHtml = pattern.sheets.map(s => {
-        const isPrioritized = priority === 'maximize_part' && s.id === prioritizedSheetId;
-        return `<li style="${isPrioritized ? 'font-weight: bold; color: #20c997;' : ''}"><strong>${s.countInPattern} عدد</strong> ورق ${s.length}×${s.width} (کد: ${s.companyCode}, برش ${s.orientation})</li>`;
-    }).join('');
+    let sheetListHtml = '';
+    let summaryHtml = '';
+    let consumedInfoHtml = '';
+    let cutsPossibleText = ''; // Initialize as empty
 
-    const summaryHtml = pattern.sheets.map(s => {
-        const totalSheetCount = cutsPossible * s.countInPattern;
-        const isPrioritized = priority === 'maximize_part' && s.id === prioritizedSheetId;
-        return `<li style="${isPrioritized ? 'background-color: #d1ecf1;' : ''}"><strong>ورق ${s.length}×${s.width} (کد: ${s.companyCode}):</strong> <span style="font-weight: bold; color: #667eea; font-size: 1.1em;">${totalSheetCount}</span> عدد</li>`;
-    }).join('');
+    if (pattern.isSlit) {
+        const fit1 = pattern.sheets[0];
+        const fit2 = pattern.sheets[1];
+        
+        card.style.border = '2px dashed #17a2b8';
+
+        sheetListHtml = `
+            <li><strong>کویل مجازی ۱ (عرض ${fit1.virtualCoilWidth}mm):</strong> ${fit1.patternText}</li>
+            <li><strong>کویل مجازی ۲ (عرض ${fit2.virtualCoilWidth}mm):</strong> ${fit2.patternText}</li>
+        `;
+        
+        const displayName1 = fit1.name ? `قطعه ${fit1.name}` : `قطعه کد ${fit1.companyCode}`;
+        const displayName2 = fit2.name ? `قطعه ${fit2.name}` : `قطعه کد ${fit2.companyCode}`;
+        
+        const dimensionToDivideBy1 = fit1.orientation === 'طولی' ? fit1.originalWidth : fit1.originalLength;
+        const dimensionToDivideBy2 = fit2.orientation === 'طولی' ? fit2.originalWidth : fit2.originalLength;
+        
+        const numFitsPerCut1 = Math.floor(fit1.usedWidth / dimensionToDivideBy1);
+        const numFitsPerCut2 = Math.floor(fit2.usedWidth / dimensionToDivideBy2);
+
+        summaryHtml = `
+            <li><strong>${displayName1} (${fit1.originalLength}×${fit1.originalWidth}):</strong> <span style="font-weight: bold; color: #667eea; font-size: 1.1em;">${fit1.cutsPossible * numFitsPerCut1}</span> عدد</li>
+            <li><strong>${displayName2} (${fit2.originalLength}×${fit2.originalWidth}):</strong> <span style="font-weight: bold; color: #667eea; font-size: 1.1em;">${fit2.cutsPossible * numFitsPerCut2}</span> عدد</li>
+        `;
+
+        // --- START OF CORRECTION ---
+        consumedInfoHtml = `
+            <p style="margin-bottom: 5px;">این الگو به صورت <strong>طول بر</strong> اجرا می‌شود:</p>
+            <ul style="padding-right: 25px; font-size: 0.95em; margin-top: 5px;">
+                <li>
+                    <strong>کویل مجازی ۱:</strong> ${fit1.virtualCoilWidth} میلی‌متر عرض دارد و هر تکرار به نواری به طول ${fit1.cutLength} میلی‌متر نیاز دارد.
+                    <br>این الگو می‌تواند <strong>${fit1.cutsPossible}</strong> بار تکرار شود.
+                </li>
+                <li>
+                    <strong>کویل مجازی ۲:</strong> ${fit2.virtualCoilWidth} میلی‌متر عرض دارد و هر تکرار به نواری به طول ${fit2.cutLength} میلی‌متر نیاز دارد.
+                    <br>این الگو می‌تواند <strong>${fit2.cutsPossible}</strong> بار تکرار شود.
+                </li>
+            </ul>
+        `;
+        // No general cutsPossibleText for slit plans
+        cutsPossibleText = '';
+        // --- END OF CORRECTION ---
+
+    } else {
+        // Original logic for combined patterns
+        sheetListHtml = pattern.sheets.map(s => {
+            const isPrioritized = priority === 'maximize_part' && s.id === prioritizedSheetId;
+            return `<li style="${isPrioritized ? 'font-weight: bold; color: #20c997;' : ''}"><strong>${s.countInPattern} عدد</strong> ورق ${s.length}×${s.width} (کد: ${s.companyCode}, برش ${s.orientation})</li>`;
+        }).join('');
+
+        summaryHtml = pattern.sheets.map(s => {
+            const totalSheetCount = cutsPossible * s.countInPattern;
+            const isPrioritized = priority === 'maximize_part' && s.id === prioritizedSheetId;
+            return `<li style="${isPrioritized ? 'background-color: #d1ecf1;' : ''}"><strong>ورق ${s.length}×${s.width} (کد: ${s.companyCode}):</strong> <span style="font-weight: bold; color: #667eea; font-size: 1.1em;">${totalSheetCount}</span> عدد</li>`;
+        }).join('');
+        
+        consumedInfoHtml = `<p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>`;
+
+        if (cutsPossible === 0 && coil.weight <= 0) {
+            cutsPossibleText = `<p><span style="color: #dc3545; font-weight: bold;">این یک طرح بهینه است اما 0 بار قابل تکرار است زیرا کویل موجودی ندارد.</span></p>`;
+        } else {
+            cutsPossibleText = `<p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>`;
+        }
+    }
 
     let priorityInfo = '';
     if (priority === 'low_weight_coils') {
@@ -3565,6 +4239,7 @@ function createPlanCard(plan, priority, prioritizedSheetId) {
     }
 
     const displayCode = (coil.companyCode && coil.companyCode.length === 8) ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>` : coil.companyCode;
+    
     card.innerHTML = `
         <h4 style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <span>طرح برش از کویل ${displayCode} (عرض: ${coil.width} م.م)</span>
@@ -3573,8 +4248,8 @@ function createPlanCard(plan, priority, prioritizedSheetId) {
         ${priorityInfo}
         <p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p>
         <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul>
-        <p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>
-        <p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>
+        ${consumedInfoHtml}
+        ${cutsPossibleText}
         <hr>
         <div style="font-size: 1.1em; color: #333;">
             <p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p>
@@ -3582,8 +4257,6 @@ function createPlanCard(plan, priority, prioritizedSheetId) {
         </div>`;
     return card;
 }
-
-
 // --- PRODUCT PLANNING MODULE (BOM, Batches) ---
 function bindPlanningEventListeners() {
     const partsModalCloseBtn = document.querySelector('#partsModal .close-btn');
@@ -3618,6 +4291,24 @@ function bindPlanningEventListeners() {
         }
     });
 }
+
+
+function getAllBOMCoilSpecs() {
+    const requiredSpecs = new Set();
+    products.forEach(product => {
+        if (product.parts) {
+            product.parts.forEach(part => {
+                // Ensure the part has a defined ideal coil with a width
+                if (part.idealCoil && part.idealCoil.width) {
+                    const spec = `${part.sheetType}-${part.sheetFeature}-${part.thickness}-${part.idealCoil.width}`;
+                    requiredSpecs.add(spec);
+                }
+            });
+        }
+    });
+    return requiredSpecs;
+}
+
 
 function clearAllBOM() {
     if (products.length === 0 && productionBatches.length === 0) {
@@ -3718,7 +4409,7 @@ function renderProductsList() {
                     <button class="btn btn-danger" data-action="delete-product" data-id="${p.id}">حذف محصول</button>
                 </td>
             </tr>`).join('');
-        tableHTML = `<div class="table-scroll-wrapper"><table><thead><tr><th>نوع محصول</th><th>مدل</th><th>تعداد قطعات</th><th>عملیات</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
+        tableHTML = `<div class="table-scroll-wrapper"><table><thead><tr><th>نوع محصول</th><th>مدل</th><th>تعداد قطعات</th><th class="print-hide">عملیات</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
     }
     container.innerHTML = controlsHTML + tableHTML;
 }
@@ -3956,7 +4647,6 @@ function renderPartsList(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
-    // Create a deep copy to add calculated properties without modifying the original data
     let displayParts = JSON.parse(JSON.stringify(product.parts));
     displayParts.forEach(p => {
         const density = settings.densities[p.sheetType];
@@ -3985,13 +4675,19 @@ function renderPartsList(productId) {
     }
     
     const controlsHTML = `
-        <div class="table-controls" data-list-id="partsListForProduct">
-            <input type="text" class="search-input" placeholder="جستجو در قطعات..." value="${partsListState.searchTerm}">
-            <div class="sort-buttons" style="flex-wrap: wrap; justify-content: flex-start;">
-                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'name' ? 'active' : ''}" data-action="sort" data-sort-key="name">نام ${partsListState.sortKey === 'name' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'code' ? 'active' : ''}" data-action="sort" data-sort-key="code">کد ${partsListState.sortKey === 'code' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+        <div class="table-controls" data-list-id="partsListForProduct" style="flex-direction: row; justify-content: space-between;">
+            <div style="display:flex; flex-grow: 1; gap:10px; align-items:center;">
+                 <input type="text" class="search-input" placeholder="جستجو در قطعات..." value="${partsListState.searchTerm}" style="max-width: 300px;">
+                 <button class="btn btn-info" data-action="print-parts">چاپ لیست</button>
+            </div>
+            <div class="sort-buttons" style="flex-wrap: wrap; justify-content: flex-end;">
+                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'name' ? 'active' : ''}" data-action="sort" data-sort-key="name">نام قطعه ${partsListState.sortKey === 'name' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'code' ? 'active' : ''}" data-action="sort" data-sort-key="code">کد قطعه ${partsListState.sortKey === 'code' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'quantityPerProduct' ? 'active' : ''}" data-action="sort" data-sort-key="quantityPerProduct">تعداد ${partsListState.sortKey === 'quantityPerProduct' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                  <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'sheetType' ? 'active' : ''}" data-action="sort" data-sort-key="sheetType">نوع/ویژگی ${partsListState.sortKey === 'sheetType' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                  <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'thickness' ? 'active' : ''}" data-action="sort" data-sort-key="thickness">ضخامت ${partsListState.sortKey === 'thickness' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'dimensions' ? 'active' : ''}" data-action="sort" data-sort-key="dimensions">ابعاد ${partsListState.sortKey === 'dimensions' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                 <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'calculatedWeight' ? 'active' : ''}" data-action="sort" data-sort-key="calculatedWeight">وزن ${partsListState.sortKey === 'calculatedWeight' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                  <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'idealCoil.width' ? 'active' : ''}" data-action="sort" data-sort-key="idealCoil.width">کویل ایده آل ${partsListState.sortKey === 'idealCoil.width' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
                  <button class="btn btn-secondary sort-btn ${partsListState.sortKey === 'wastePercentage' ? 'active' : ''}" data-action="sort" data-sort-key="wastePercentage">ضایعات ${partsListState.sortKey === 'wastePercentage' ? (partsListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
             </div>
@@ -4017,7 +4713,7 @@ function renderPartsList(productId) {
                     <button class="btn btn-danger" data-action="delete-part" data-product-id="${productId}" data-part-id="${p.id}">حذف</button>
                 </td>
             </tr>`).join('');
-        tableHTML = `<div class="table-scroll-wrapper"><table><thead><tr><th>نام قطعه</th><th>کد قطعه</th><th>تعداد</th><th>نوع/ویژگی ورق</th><th>ضخامت</th><th>ابعاد</th><th>وزن (ک.گ)</th><th>کویل ایده آل</th><th>ضایعات %</th><th>عملیات</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
+        tableHTML = `<div class="table-scroll-wrapper"><table><thead><tr><th>نام قطعه</th><th>کد قطعه</th><th>تعداد</th><th>نوع/ویژگی ورق</th><th>ضخامت</th><th>ابعاد</th><th>وزن (ک.گ)</th><th>کویل ایده آل</th><th>ضایعات %</th><th class="print-hide">عملیات</th></tr></thead><tbody>${tableRows}</tbody></table></div>`;
     }
     container.innerHTML = controlsHTML + tableHTML;
 }
@@ -4034,10 +4730,48 @@ function handlePartActions(event) {
         case 'delete-part':
             deletePart(productId, partId);
             break;
+        case 'print-parts':
+            printPartsList();
+            break;
         case 'sort':
             handleTableSort(partsListState, renderPartsList, sortKey, editingProductId);
             break;
     }
+}
+
+function printPartsList() {
+    const product = products.find(p => p.id === editingProductId);
+    if (!product) return;
+
+    const listContainer = document.getElementById('partsListForProduct');
+    if (!listContainer) return;
+
+    const table = listContainer.querySelector('table');
+    if (!table) {
+        showAlert('جدولی برای چاپ وجود ندارد.');
+        return;
+    }
+
+    const tableClone = table.cloneNode(true);
+    // Remove the last column (Operations) from header and all body rows
+    tableClone.querySelector('thead tr').deleteCell(-1);
+    tableClone.querySelectorAll('tbody tr').forEach(row => row.deleteCell(-1));
+
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = `
+        <h2 style="text-align: center;">لیست قطعات برای محصول: ${product.type} - مدل ${product.model}</h2>
+        ${tableClone.outerHTML}
+    `;
+
+    document.body.classList.add('printing-parts-list');
+    
+    window.onafterprint = () => {
+        document.body.classList.remove('printing-parts-list');
+        printArea.innerHTML = '';
+        window.onafterprint = null; // Clean up the event handler
+    };
+
+    window.print();
 }
 
 
@@ -4136,6 +4870,7 @@ function calculateShortage() {
     }
 
     const selectedBatch = productionBatches.find(b => b.id === selectedBatchId);
+    if (!selectedBatch) return;
     const productionPlan = selectedBatch.plan;
 
     if (Object.keys(productionPlan).length === 0 || Object.values(productionPlan).every(qty => qty === 0 || isNaN(qty))) {
@@ -4178,7 +4913,6 @@ function calculateShortage() {
             const weightPerPart_kg = (part.length * part.width * part.thickness * density) / 1000000;
             const totalNetWeight = netQtyToProduce * weightPerPart_kg;
             
-            // Use the pre-calculated waste percentage stored in the part object
             const finalWasteRatio = (part.wastePercentage || 0) / 100;
             const grossWeightFactor = 1 / (1 - finalWasteRatio);
             const totalGrossWeight = totalNetWeight * grossWeightFactor;
@@ -4215,7 +4949,7 @@ function calculateShortage() {
     
     document.getElementById('shortageReportTitle').textContent = `گزارش کسری مواد اولیه برای سفارش: "${selectedBatch.name}"`;
     toggleShortageReportFilter(); 
-    document.getElementById('shortageResultSection').style.display = 'block';
+    document.getElementById('shortageResultSection').style.display = 'flex';
     document.getElementById('shortageResultSection').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -4251,7 +4985,7 @@ function renderShortageReport(data) {
                 <td>${Math.round(row.required)}</td>
                 <td>${Math.round(row.available)}</td>
                 <td>${Math.round(row.shortage)}</td>
-                <td class="operations-cell">${actionButton}</td>
+                <td class="operations-cell print-hide">${actionButton}</td>
             </tr>`;
         }).join('');
     }
@@ -4265,7 +4999,7 @@ function renderShortageReport(data) {
                         <th>نیاز ناخالص (ک.گ) <br><small>(با احتساب ضایعات برش)</small></th>
                         <th>موجودی انبار (ک.گ)</th>
                         <th>کسری نهایی (ک.گ)</th>
-                        <th>عملیات</th>
+                        <th class="print-hide">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>${tableRowsHTML}</tbody>
@@ -4429,7 +5163,7 @@ function renderBatchesList() {
                 <thead>
                     <tr>
                         <th>نام سفارش کاری</th>
-                        <th style="width: 280px;">عملیات</th>
+                        <th style="width: 280px;" class="print-hide">عملیات</th>
                     </tr>
                 </thead>
                 <tbody>${tableRows}</tbody>
@@ -4606,6 +5340,611 @@ function saveWipData() {
 }
 
 
+// --- NEW: COIL ANALYSIS MODULE ---
+// START OF CHANGES: Added slitting feature to Coil Analysis
+function buildCoilAnalysisPage() {
+    document.getElementById('page-coil-analysis').innerHTML = `
+        <div class="page-layout-container">
+            <div class="analysis-section" id="analysisInputAndSettingsSection">
+                <h2>۱. ورود قطعات برای تحلیل</h2>
+                <div class="input-grid print-hide" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div class="input-item"><label for="analysisPartName">نام قطعه:</label><input type="text" id="analysisPartName" placeholder="مثال: درب جدید"></div>
+                    <div class="input-item"><label for="analysisPartLength">طول (م.م):</label><input type="number" id="analysisPartLength"></div>
+                    <div class="input-item"><label for="analysisPartWidth">عرض (م.م):</label><input type="number" id="analysisPartWidth"></div>
+                </div>
+                <div class="form-buttons-container print-hide" style="margin-top: 15px;">
+                    <button id="addAnalysisPartBtn" class="btn btn-primary">افزودن به لیست تحلیل</button>
+                    <button id="cancelAnalysisPartBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
+                </div>
+                <h3 style="margin-top: 25px;">لیست قطعات برای تحلیل</h3>
+                <div id="analysisPartListContainer" class="table-container" style="margin-top: 10px; min-height: 160px;"></div>
+                <hr>
+                <h2>۲. تنظیمات تحلیل</h2>
+                 <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px 20px;">
+                    <div class="input-item">
+                        <label for="maxAnalysisWasteInput">حداکثر ضایعات (%):</label>
+                        <input type="number" id="maxAnalysisWasteInput" value="5" class="print-hide">
+                        <span class="print-only-value" id="print-waste"></span>
+                    </div>
+                    <div class="input-item">
+                        <label for="maxAnalysisWidthInput">حداکثر عرض (م.م):</label>
+                        <input type="number" id="maxAnalysisWidthInput" value="1500" max="2500" class="print-hide">
+                        <span class="print-only-value" id="print-max-width"></span>
+                    </div>
+                     <div class="input-item">
+                        <label for="analysisStartWidthInput">شروع عرض (م.م):</label>
+                        <input type="number" id="analysisStartWidthInput" value="500" min="100" class="print-hide">
+                        <span class="print-only-value" id="print-start-width"></span>
+                    </div>
+                    <div class="input-item">
+                        <label for="analysisStepInput">گام افزایش (م.م):</label>
+                        <select id="analysisStepInput" class="print-hide">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="150">150</option>
+                            <option value="200">200</option>
+                            <option value="250">250</option>
+                            <option value="300">300</option>
+                            <option value="350">350</option>
+                            <option value="400">400</option>
+                            <option value="450">450</option>
+                            <option value="500">500</option>
+                        </select>
+                        <span class="print-only-value" id="print-step"></span>
+                    </div>
+                </div>
+                <div class="input-item" style="margin-top: 15px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 5px; gap: 30px;" class="print-hide">
+                        <div style="display: flex; align-items: center;">
+                            <input type="checkbox" id="selectAllWidthsCheckbox" checked style="margin-left: 8px;">
+                            <label for="selectAllWidthsCheckbox" style="cursor: pointer; font-weight: bold; margin-bottom: 0;">عرض‌های استاندارد بازار</label>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <input type="checkbox" id="enableSlittingCheckbox" disabled>
+                            <label for="enableSlittingCheckbox" style="cursor: pointer; font-weight: bold; margin-bottom: 0;">فعال‌سازی طول بر شدن</label>
+                        </div>
+                    </div>
+                     <div id="standardWidthsContainer" class="print-hide" style="max-height: 160px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background: #f9f9f9; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; align-content: flex-start;"></div>
+                     <div class="print-only-summary">
+                         <p><strong>عرض‌های استاندارد انتخاب شده:</strong></p>
+                         <p id="print-selected-widths" style="word-break: break-word;"></p>
+                     </div>
+                </div>                
+				
+				<div class="form-buttons-container print-hide">
+                    <button id="runCoilAnalysisBtn" class="btn btn-success btn-main-action" disabled>یافتن کویل ایده‌آل</button>
+                    <button id="printAnalysisBtn" class="btn btn-info" disabled>چاپ گزارش</button>
+                </div>
+            </div>
+            <div class="analysis-section" id="analysisResultsSection">
+                <h2>۳. نتایج تحلیل</h2>
+                <div id="analysisResultsContainer">
+                    <p style="text-align: center; color: #6c757d; margin-top: 50px;">ابتدا قطعات مورد نظر را به لیست اضافه کرده و سپس دکمه "یافتن کویل ایده‌آل" را بزنید.</p>
+                </div>
+            </div>
+        </div>`;
+    
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @media print {
+            .print-only-value { display: block; font-weight: bold; padding-top: 10px; }
+            .print-only-summary { display: block; }
+            #page-coil-analysis .analysis-section { border: 1px solid #333; page-break-inside: avoid; }
+            #analysisPartListContainer .operations-cell { display: none; }
+        }
+        @media screen {
+            .print-only-value, .print-only-summary { display: none; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    renderStandardWidthsCheckboxes();
+}
+
+function bindCoilAnalysisEventListeners() {
+    document.getElementById('addAnalysisPartBtn').addEventListener('click', saveAnalysisPart);
+    document.getElementById('cancelAnalysisPartBtn').addEventListener('click', cancelAnalysisPartEdit);
+    document.getElementById('runCoilAnalysisBtn').addEventListener('click', runCoilAnalysis);
+    
+    // START OF CORRECTION
+    document.getElementById('printAnalysisBtn').addEventListener('click', () => {
+        // 1. Get values from input fields
+        const wasteVal = document.getElementById('maxAnalysisWasteInput').value;
+        const maxWidthVal = document.getElementById('maxAnalysisWidthInput').value;
+        const startWidthVal = document.getElementById('analysisStartWidthInput').value;
+        const stepVal = document.getElementById('analysisStepInput').value;
+        const selectedWidths = Array.from(document.querySelectorAll('#standardWidthsContainer input:checked'))
+                                    .map(cb => cb.value)
+                                    .join('، ');
+
+        // 2. Populate the print-only spans with the values
+        document.getElementById('print-waste').textContent = `${wasteVal} %`;
+        document.getElementById('print-max-width').textContent = `${maxWidthVal} mm`;
+        document.getElementById('print-start-width').textContent = `${startWidthVal} mm`;
+        document.getElementById('print-step').textContent = `${stepVal} mm`;
+        document.getElementById('print-selected-widths').textContent = selectedWidths || 'هیچکدام';
+
+        // 3. Trigger the print dialog
+        window.print();
+    });
+    // END OF CORRECTION
+
+    document.getElementById('maxAnalysisWidthInput').addEventListener('input', renderStandardWidthsCheckboxes);
+    document.getElementById('analysisStartWidthInput').addEventListener('input', renderStandardWidthsCheckboxes);
+    document.getElementById('analysisStepInput').addEventListener('change', renderStandardWidthsCheckboxes);
+
+    document.getElementById('selectAllWidthsCheckbox').addEventListener('change', (event) => {
+        const isChecked = event.target.checked;
+        const widthCheckboxes = document.querySelectorAll('#standardWidthsContainer input[type="checkbox"]');
+        widthCheckboxes.forEach(cb => {
+            cb.checked = isChecked;
+        });
+    });
+
+    document.getElementById('analysisPartListContainer').addEventListener('click', (event) => {
+        const action = event.target.dataset.action;
+        const id = event.target.dataset.id;
+        if (action === 'delete-analysis-part') {
+            deleteAnalysisPart(id);
+        } else if (action === 'edit-analysis-part') {
+            editAnalysisPart(id);
+        }
+    });
+}
+
+function saveAnalysisPart() {
+    const slittingCheckbox = document.getElementById('enableSlittingCheckbox');
+
+    // Check for part limit only when adding a new one
+    if (analysisParts.length >= 2 && !editingAnalysisPartId) {
+        showAlert('برای تحلیل، حداکثر می‌توان ۲ قطعه را به لیست اضافه کرد.');
+        return;
+    }
+
+    const nameInput = document.getElementById('analysisPartName');
+    const lengthInput = document.getElementById('analysisPartLength');
+    const widthInput = document.getElementById('analysisPartWidth');
+
+    const name = nameInput.value.trim() || `قطعه ${analysisParts.length + 1}`;
+    const length = parseFloat(lengthInput.value);
+    const width = parseFloat(widthInput.value);
+
+    if (isNaN(length) || isNaN(width) || length <= 0 || width <= 0) {
+        showAlert('لطفاً طول و عرض معتبر و مثبت برای قطعه وارد کنید.');
+        return;
+    }
+    if (width > length && !editingAnalysisPartId) {
+        if(!confirm('عرض قطعه از طول آن بزرگتر است. آیا مطمئن هستید؟ (معمولا طول بزرگتر از عرض است)')) {
+            return;
+        }
+    }
+
+    if (editingAnalysisPartId) {
+        // Update existing part
+        const partIndex = analysisParts.findIndex(p => p.id === editingAnalysisPartId);
+        if (partIndex > -1) {
+            analysisParts[partIndex] = { ...analysisParts[partIndex], name, length, width };
+        }
+    } else {
+        // Add new part
+        analysisParts.push({ id: 'AP' + Date.now(), name, length, width });
+    }
+    
+    renderAnalysisPartList();
+    cancelAnalysisPartEdit();
+    document.getElementById('runCoilAnalysisBtn').disabled = false;
+
+    slittingCheckbox.disabled = analysisParts.length !== 2;
+    if (analysisParts.length !== 2) {
+        slittingCheckbox.checked = false;
+    }
+}
+
+function deleteAnalysisPart(id) {
+    analysisParts = analysisParts.filter(p => p.id !== id);
+    renderAnalysisPartList();
+
+    const slittingCheckbox = document.getElementById('enableSlittingCheckbox');
+    slittingCheckbox.disabled = analysisParts.length !== 2;
+     if (analysisParts.length !== 2) {
+        slittingCheckbox.checked = false;
+    }
+    
+    if (analysisParts.length === 0) {
+        document.getElementById('runCoilAnalysisBtn').disabled = true;
+        document.getElementById('printAnalysisBtn').disabled = true;
+        document.getElementById('analysisResultsContainer').innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 50px;">لیست تحلیل خالی شد. لطفاً قطعات جدید اضافه کنید.</p>';
+    }
+}
+
+function renderAnalysisPartList() {
+    const container = document.getElementById('analysisPartListContainer');
+    if (analysisParts.length === 0) {
+        container.innerHTML = '<p style="text-align: center;">هنوز قطعه‌ای برای تحلیل اضافه نشده است.</p>';
+        return;
+    }
+
+    const tableRows = analysisParts.map(p => `
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.length}</td>
+            <td>${p.width}</td>
+            <td class="operations-cell">
+                <button class="btn btn-warning" data-action="edit-analysis-part" data-id="${p.id}">ویرایش</button>
+                <button class="btn btn-danger" data-action="delete-analysis-part" data-id="${p.id}">حذف</button>
+            </td>
+        </tr>`).join('');
+    
+    container.innerHTML = `
+        <div class="table-scroll-wrapper">
+            <table>
+                <thead><tr><th>نام قطعه</th><th>طول (م.م)</th><th>عرض (م.م)</th><th class="print-hide">عملیات</th></tr></thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+        </div>`;
+}
+
+function runCoilAnalysis() {
+    const resultsContainer = document.getElementById('analysisResultsContainer');
+    resultsContainer.innerHTML = '<p style="text-align:center;">در حال محاسبه... این عملیات ممکن است چند لحظه طول بکشد.</p>';
+    
+    setTimeout(() => {
+        // --- 1. Get Inputs ---
+        const maxWaste = parseFloat(document.getElementById('maxAnalysisWasteInput').value);
+        const maxSearchWidth = parseFloat(document.getElementById('maxAnalysisWidthInput').value);
+        const enableSlitting = document.getElementById('enableSlittingCheckbox').checked;
+
+        if (isNaN(maxWaste) || maxWaste < 0 || maxWaste > 100) {
+            showAlert('حداکثر ضایعات مجاز باید عددی بین ۰ تا ۱۰۰ باشد.');
+            resultsContainer.innerHTML = ''; return;
+        }
+         if (isNaN(maxSearchWidth) || maxSearchWidth <= 0) {
+            showAlert('حداکثر عرض کویل برای جستجو باید یک عدد معتبر و مثبت باشد.');
+            resultsContainer.innerHTML = ''; return;
+        }
+
+        const standardWidths = Array.from(document.querySelectorAll('#standardWidthsContainer input:checked'))
+            .map(cb => parseFloat(cb.value))
+            .filter(w => !isNaN(w) && w > 0 && w <= maxSearchWidth)
+            .sort((a,b) => a-b);
+        
+        // --- 2. Run Analyses ---
+        let allCustomResults = findOptimalCustomCoil(analysisParts, enableSlitting)
+            .filter(res => res.waste <= maxWaste && res.width <= maxSearchWidth);
+        
+        allCustomResults.sort((a, b) => {
+            if (a.waste !== b.waste) return a.waste - b.waste;
+            return a.width - b.width;
+        });
+
+        let allStandardResults = [];
+        standardWidths.forEach(sWidth => {
+            const layoutsForWidth = findBestLayoutForStandardWidth(analysisParts, sWidth, enableSlitting);
+            layoutsForWidth.forEach(layout => {
+                if (layout && layout.waste <= maxWaste) {
+                    allStandardResults.push(layout);
+                }
+            });
+        });
+        
+		allStandardResults.sort((a, b) => a.waste - b.waste);
+        // --- 3. De-duplicate results WHILE PRESERVING the sorted order ---
+        // THIS IS THE CRITICAL FIX
+        const uniqueStandardResults = [];
+        const seenKeys = new Set();
+        for (const res of allStandardResults) {
+            const key = `${res.width}-${res.patternText}`;
+            if (!seenKeys.has(key)) {
+                uniqueStandardResults.push(res);
+                seenKeys.add(key);
+            }
+        }
+
+        // --- 4. Render Results ---
+        let html = '';
+        const analysisSettingsText = `(ضایعات ≤ ${maxWaste}% و عرض ≤ ${maxSearchWidth}mm)`;
+
+        html += `<h4 class="result-section-title">⭐ بهترین کویل‌های سفارشی ${analysisSettingsText}</h4>`;
+        
+        if (allCustomResults.length > 0) {
+            allCustomResults.forEach(res => {
+                html += `
+                <div class="analysis-result-card custom">
+                    <p>عرض ایده‌آل: <strong>${res.width} میلی‌متر</strong></p>
+                    <p>درصد ضایعات: <strong style="color: #28a745;">${res.waste.toFixed(2)}%</strong></p>
+                    <p>الگوی برش بهینه:<br>${res.patternText.replace(/\n/g, '<br>')}</p>
+                    ${res.isSlit ? '<p style="font-size:0.9em;color:#555;font-style:italic;">(به دست آمده از طریق طول بر شدن)</p>' : ''}
+                </div>`;
+            });
+        } else {
+            html += `<div class="analysis-result-card custom"><p>هیچ ترکیب بهینه‌ای برای کویل سفارشی با این محدودیت‌ها یافت نشد.</p></div>`;
+        }
+
+        html += `<hr style="margin: 25px 0;">`;
+        html += `<h4 class="result-section-title">🛒 بهترین کویل‌های استاندارد ${analysisSettingsText}</h4>`;
+        
+        if (uniqueStandardResults.length > 0) {
+             uniqueStandardResults.forEach(res => {
+                 html += `
+                <div class="analysis-result-card standard">
+                    <p>عرض استاندارد: <strong>${res.width} میلی‌متر</strong></p>
+                    <p>درصد ضایعات: <strong style="color: #17a2b8;">${res.waste.toFixed(2)}%</strong></p>
+                    <p>الگوی برش بهینه:<br>${res.patternText}</p>
+                    ${res.isSlit ? '<p style="font-size:0.9em;color:#555;font-style:italic;">(به دست آمده از طریق طول بر شدن)</p>' : ''}
+                </div>`;
+            });
+        } else {
+             html += `<div class="analysis-result-card standard"><p>هیچ ترکیب بهینه‌ای برای عرض‌های استاندارد با این محدودیت‌ها یافت نشد.</p></div>`;
+        }
+        
+        resultsContainer.innerHTML = html;
+        document.getElementById('printAnalysisBtn').disabled = false;
+
+    }, 50);
+}
+function getSinglePartBestFit(part, availableWidth) {
+    if (!part || availableWidth <= 0) return { waste: Infinity };
+
+    const orientations = [
+        { dim: part.width, text: 'طولی' },
+        { dim: part.length, text: 'عرضی' }
+    ];
+
+    let bestFit = { waste: Infinity, usedWidth: 0, patternText: '' };
+
+    const displayName = part.name ? `قطعه ${part.name}` : `قطعه کد ${part.companyCode}`;
+
+    orientations.forEach(o => {
+        if (part.width === part.length && o.text === 'عرضی') return;
+
+        if (o.dim <= availableWidth) {
+            const numFits = Math.floor(availableWidth / o.dim);
+            if (numFits > 0) {
+                const usedWidth = numFits * o.dim;
+                const waste = (availableWidth - usedWidth) / availableWidth * 100;
+
+                if (waste < bestFit.waste) {
+                    bestFit = {
+                        ...part,
+                        // --- START OF CORRECTION ---
+                        originalLength: part.length, // Explicitly save original dimensions
+                        originalWidth: part.width,
+                        // --- END OF CORRECTION ---
+                        width: availableWidth,
+                        usedWidth: usedWidth,
+                        waste: waste,
+                        patternText: `${numFits} عدد ${displayName} (برش ${o.text})`,
+                        orientation: o.text
+                    };
+                }
+            }
+        }
+    });
+
+    return bestFit;
+}
+function findBestLayoutForStandardWidth(parts, standardWidth, enableSlitting) {
+    let allPossibleLayouts = [];
+    const numInputParts = parts.length;
+
+    // --- SCENARIO 1: Combined Layouts (No Slitting) ---
+    const combinedPatterns = findAllWidthPatterns(parts, standardWidth);
+    combinedPatterns.forEach(pattern => {
+        const usefulArea = pattern.sheets.reduce((sum, s) => sum + (s.length * s.width * s.countInPattern), 0);
+        const consumedArea = pattern.cutLength * standardWidth;
+        const totalWaste = consumedArea > 0 ? ((consumedArea - usefulArea) / consumedArea) * 100 : 100;
+
+        // *** CRITICAL ADDITION: Check if the pattern uses all input parts ***
+        const usesAllParts = pattern.uniquePartCount === numInputParts;
+
+        allPossibleLayouts.push({
+            width: standardWidth,
+            waste: totalWaste,
+            isSlit: false,
+            patternText: formatPatternText(pattern.sheets),
+            usesAllParts: usesAllParts // Add a flag for sorting
+        });
+    });
+
+    // --- SCENARIO 2: Slit Layout (only if 2 parts and enabled) ---
+    if (parts.length === 2 && enableSlitting) {
+        const partA = parts[0];
+        const partB = parts[1];
+        
+        // Permutation 1: Try fitting Part A first, then Part B in the remainder
+        const fitA = getSinglePartBestFit(partA, standardWidth);
+        if (fitA.waste !== Infinity && fitA.usedWidth < standardWidth) {
+            const remainingWidthForB = standardWidth - fitA.usedWidth;
+            const fitB = getSinglePartBestFit(partB, remainingWidthForB);
+            if (fitB.waste !== Infinity) {
+                const totalUsedWidth = fitA.usedWidth + fitB.usedWidth;
+                const totalWaste = (standardWidth - totalUsedWidth) / standardWidth * 100;
+                allPossibleLayouts.push({
+                    width: standardWidth,
+                    waste: totalWaste,
+                    isSlit: true,
+                    patternText: `کویل 1 (عرض ${fitA.usedWidth}mm): ${fitA.patternText}<br>کویل 2 (عرض ${fitB.usedWidth}mm): ${fitB.patternText}`,
+                    usesAllParts: true // A slit layout always uses all parts by definition
+                });
+            }
+        }
+        
+        // Permutation 2: Try fitting Part B first, then Part A in the remainder
+        const fitB_alt = getSinglePartBestFit(partB, standardWidth);
+        if (fitB_alt.waste !== Infinity && fitB_alt.usedWidth < standardWidth) {
+            const remainingWidthForA = standardWidth - fitB_alt.usedWidth;
+            const fitA_alt = getSinglePartBestFit(partA, remainingWidthForA);
+            if (fitA_alt.waste !== Infinity) {
+                const totalUsedWidth = fitB_alt.usedWidth + fitA_alt.usedWidth;
+                const totalWaste = (standardWidth - totalUsedWidth) / standardWidth * 100;
+                allPossibleLayouts.push({
+                    width: standardWidth,
+                    waste: totalWaste,
+                    isSlit: true,
+                    patternText: `کویل 1 (عرض ${fitB_alt.usedWidth}mm): ${fitB_alt.patternText}<br>کویل 2 (عرض ${fitA_alt.usedWidth}mm): ${fitA_alt.patternText}`,
+                    usesAllParts: true // A slit layout always uses all parts by definition
+                });
+            }
+        }
+    }
+
+    // Return the complete list for the calling function to sort and filter.
+    // The calling function will handle the sorting logic.
+    return allPossibleLayouts;
+}
+
+function findOptimalCustomCoil(parts, enableSlitting) {
+    if (!parts || parts.length === 0) return [];
+    
+    let results = [];
+    const partA = parts[0];
+    const partB = parts.length > 1 ? parts[1] : null;
+
+    const getOrientations = (part) => {
+        const dims = [{ dim: part.width, otherDim: part.length, text: 'طولی' }];
+        if (part.width !== part.length) {
+            dims.push({ dim: part.length, otherDim: part.width, text: 'عرضی' });
+        }
+        return dims;
+    };
+    
+    // --- Case 1: Single Part Analysis (always 0 waste) ---
+    getOrientations(partA).forEach(oA => {
+        results.push({
+            width: oA.dim, waste: 0, isSlit: false,
+            patternText: `1 عدد قطعه ${partA.name} (برش ${oA.text})`
+        });
+    });
+
+    if (partB) {
+        getOrientations(partB).forEach(oB => {
+            results.push({
+                width: oB.dim, waste: 0, isSlit: false,
+                patternText: `1 عدد قطعه ${partB.name} (برش ${oB.text})`
+            });
+        });
+
+        // --- Case 2: Combined (Non-Slit) Analysis ---
+        getOrientations(partA).forEach(oA => {
+            getOrientations(partB).forEach(oB => {
+                const coilWidth = oA.dim + oB.dim;
+                const cutLength = Math.max(oA.otherDim, oB.otherDim);
+                const consumedArea = coilWidth * cutLength;
+                const usedArea = (partA.length * partA.width) + (partB.length * partB.width);
+                const waste = (1 - usedArea / consumedArea) * 100;
+                results.push({
+                    width: coilWidth, waste: waste, isSlit: false,
+                    patternText: `1 عدد ${partA.name} (برش ${oA.text}) + 1 عدد ${partB.name} (برش ${oB.text})`
+                });
+            });
+        });
+        
+        // --- Case 3: Slit Analysis (if enabled) ---
+        if (enableSlitting) {
+             getOrientations(partA).forEach(oA => {
+                getOrientations(partB).forEach(oB => {
+                    results.push({
+                        width: oA.dim + oB.dim,
+                        waste: 0,
+                        isSlit: true,
+                        patternText: `کویل 1 (عرض ${oA.dim}mm): 1 عدد ${partA.name} (برش ${oA.text})<br>کویل 2 (عرض ${oB.dim}mm): 1 عدد ${partB.name} (برش ${oB.text})`
+                    });
+                });
+            });
+        }
+    }
+    
+    // --- Finalize: Filter, De-duplicate, and Sort ---
+    const uniqueResults = new Map();
+    results.forEach(r => {
+        if (!uniqueResults.has(r.width) || r.waste < uniqueResults.get(r.width).waste) {
+            uniqueResults.set(r.width, r);
+        }
+    });
+
+    return Array.from(uniqueResults.values()).sort((a, b) => {
+        if (a.waste !== b.waste) return a.waste - b.waste;
+        return a.width - b.width;
+    });
+}
+
+function formatPatternText(sheets) {
+    // This function receives the 'sheets' array from a pattern object.
+    // Each element in 'sheets' already has a 'countInPattern' property.
+    // So, we just need to format it correctly.
+    
+    return sheets.map(item => {
+        return `${item.countInPattern} عدد قطعه ${item.name} (برش ${item.orientation})`;
+    }).join('<br>');
+}
+
+// END OF CHANGES
+
+function renderStandardWidthsCheckboxes() {
+    const container = document.getElementById('standardWidthsContainer');
+    const maxWidthInput = document.getElementById('maxAnalysisWidthInput');
+    const startWidthInput = document.getElementById('analysisStartWidthInput');
+    const stepInput = document.getElementById('analysisStepInput');
+    const selectAllCheckbox = document.getElementById('selectAllWidthsCheckbox');
+    if (!container || !maxWidthInput || !startWidthInput || !stepInput || !selectAllCheckbox) return;
+
+    const maxWidth = parseInt(maxWidthInput.value, 10) || 1500;
+    const startWidth = parseInt(startWidthInput.value, 10) || 500;
+    const step = parseInt(stepInput.value, 10) || 100;
+    const isSelectAllChecked = selectAllCheckbox.checked;
+    
+    const allWidths = new Set();
+    
+    for (let i = startWidth; i <= maxWidth; i += step) {
+        allWidths.add(i);
+    }
+
+    const sortedWidths = Array.from(allWidths);
+    
+    container.innerHTML = sortedWidths.map(width => {
+        const checkedState = isSelectAllChecked ? 'checked' : '';
+        return `
+            <div class="filter-option">
+                <input type="checkbox" id="sw-${width}" value="${width}" ${checkedState}>
+                <label for="sw-${width}">${width}</label>
+            </div>`;
+    }).join('');
+}
+
+function editAnalysisPart(id) {
+    const partToEdit = analysisParts.find(p => p.id === id);
+    if (!partToEdit) return;
+
+    editingAnalysisPartId = id;
+
+    document.getElementById('analysisPartName').value = partToEdit.name;
+    document.getElementById('analysisPartLength').value = partToEdit.length;
+    document.getElementById('analysisPartWidth').value = partToEdit.width;
+
+    const addButton = document.getElementById('addAnalysisPartBtn');
+    const cancelButton = document.getElementById('cancelAnalysisPartBtn');
+
+    addButton.textContent = 'ذخیره تغییرات';
+    addButton.className = 'btn btn-success';
+    cancelButton.style.display = 'inline-block';
+    
+    document.getElementById('analysisInputAndSettingsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelAnalysisPartEdit() {
+    editingAnalysisPartId = null;
+
+    document.getElementById('analysisPartName').value = '';
+    document.getElementById('analysisPartLength').value = '';
+    document.getElementById('analysisPartWidth').value = '';
+
+    const addButton = document.getElementById('addAnalysisPartBtn');
+    const cancelButton = document.getElementById('cancelAnalysisPartBtn');
+
+    addButton.textContent = 'افزودن به لیست تحلیل';
+    addButton.className = 'btn btn-primary';
+    cancelButton.style.display = 'none';
+}
 </script>
 </body>
 </html>
