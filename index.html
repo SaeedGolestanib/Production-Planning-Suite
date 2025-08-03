@@ -999,7 +999,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.0.4
+// SCRIPT VERSION: 6.0.5
 // Author: Saeed Golestani
 // Date: 2024-09-05
 // Changes:
@@ -1009,12 +1009,12 @@
 //    and slit) for a given width, ensuring the absolute best option is chosen.
 // 3. (REFACTOR) Simplified the `runCoilAnalysis` function for standard widths; it
 //    now correctly relies on the improved `findBestLayoutForStandardWidth`.
-// 4. (VERSION) Version updated to 6.0.4.
+// 4. (VERSION) Version updated to 6.0.5.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.0.4';
+const APP_VERSION = '6.0.5';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -1674,6 +1674,39 @@ function bindEventListeners() {
 
     // Settings Page
     document.getElementById('btnLogin').addEventListener('click', handleLogin);
+	document.getElementById('importFilterModal').addEventListener('change', (event) => {
+		const target = event.target;
+		// Ensure the event was triggered by a checkbox
+		if (!target.matches('input[type="checkbox"]')) return;
+
+		// Check which import process is active
+		if (currentImportType === 'bom') {
+			const groupElement = target.closest('[data-filter-group]');
+			if (!groupElement) return;
+			const groupName = groupElement.dataset.filterGroup;
+			
+			// Trigger the correct update chain based on which filter group was changed
+			if (groupName === 'productTypes') updateBomModelFilter();
+			else if (groupName === 'productModels') updateBomSheetTypeFilter();
+			else if (groupName === 'sheetTypes') updateBomSheetFeatureFilter();
+			else if (groupName === 'sheetFeatures') updateBomThicknessFilter();
+
+		} else if (currentImportType === 'sheets') {
+			if (target.closest('[data-filter-group="types"]')) updateSheetFeatureFilter();
+			else if (target.closest('[data-filter-group="features"]')) updateSheetThicknessFilter();
+			else if (target.closest('[data-filter-group="thicknesses"]')) updateSheetDimensionFilter();
+
+		} else if (currentImportType === 'coils') {
+			if (target.closest('[data-filter-group="types"]')) updateCoilFeatureFilter();
+			else if (target.closest('[data-filter-group="features"]')) updateCoilThicknessFilter();
+			else if (target.closest('[data-filter-group="thicknesses"]')) updateCoilWidthFilter();
+		
+		} else if (currentImportType === 'analysis') { // This is our new logic
+			if (target.closest('[data-filter-group="types"]')) updateAnalysisFeatureFilter();
+			else if (target.closest('[data-filter-group="features"]')) updateAnalysisThicknessFilter();
+			else if (target.closest('[data-filter-group="thicknesses"]')) updateAnalysisDimensionFilter();
+			else if (target.closest('[data-filter-group="dimensions"]')) updateAnalysisPartNameFilter();}
+	});
     document.getElementById('btnShowAdvanced').addEventListener('click', showAdvancedSettings);
     document.getElementById('btnAddProductType').addEventListener('click', addSettingProductType);
     document.getElementById('btnAddType').addEventListener('click', addSettingType);
@@ -2496,6 +2529,9 @@ function importFromXLSX(type) {
                 } else if (type === 'wip') {
                     processImportedWip(json);
                 }
+				  else if (type === 'analysis') {
+                    await processImportedAnalysisParts(json);
+                }
 
             } catch (error) {
                 console.error("Error processing XLSX file:", error);
@@ -3176,7 +3212,7 @@ function updateBomThicknessFilter() {
     createFilterCheckboxGroup('thicknesses', uniqueThicknesses, 'bom-');
 }
 
-// --- Generic Filter UI Helpers ---
+// REPLACEMENT for createFilterCheckboxGroup
 function createFilterCheckboxGroup(groupName, items, prefix = '') {
     const container = document.querySelector(`[data-filter-group="${groupName}"]`);
     if (!container) return;
@@ -5356,8 +5392,13 @@ function buildCoilAnalysisPage() {
                     <button id="addAnalysisPartBtn" class="btn btn-primary">افزودن به لیست تحلیل</button>
                     <button id="cancelAnalysisPartBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                 </div>
-                <h3 style="margin-top: 25px;">لیست قطعات برای تحلیل</h3>
-                <div id="analysisPartListContainer" class="table-container" style="margin-top: 10px; min-height: 160px;"></div>
+				<div class="section-header" style="margin-top: 25px;">
+					<h3>لیست قطعات برای تحلیل</h3>
+					<div class="io-buttons">
+						<button id="btnImportAnalysisParts" class="btn btn-primary">ورود از Excel</button>
+					</div>
+				</div>
+				<div id="analysisPartListContainer" class="table-container" style="margin-top: 10px; min-height: 160px;"></div>
                 <hr>
                 <h2>۲. تنظیمات تحلیل</h2>
                  <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px 20px;">
@@ -5441,8 +5482,31 @@ function buildCoilAnalysisPage() {
     renderStandardWidthsCheckboxes();
 }
 
+function updateAnalysisPartNameFilter() {
+    // 1. دریافت مقادیر انتخاب شده از تمام فیلترهای قبلی
+    const selectedTypes = getSelectedFilterValues('types', 'analysis-');
+    const selectedFeatures = getSelectedFilterValues('features', 'analysis-');
+    const selectedThicknesses = getSelectedFilterValues('thicknesses', 'analysis-').map(parseFloat);
+    const selectedDimensions = getSelectedFilterValues('dimensions', 'analysis-'); // فیلتر کلیدی وابسته
+
+    // 2. فیلتر کردن داده‌های موقت بر اساس انتخاب‌های کاربر
+    const relevantData = tempImportData.filter(p =>
+        (selectedTypes.length === 0 || selectedTypes.includes(p.type)) &&
+        (selectedFeatures.length === 0 || selectedFeatures.includes(p.feature)) &&
+        (selectedThicknesses.length === 0 || selectedThicknesses.includes(p.thickness)) &&
+        (selectedDimensions.length === 0 || selectedDimensions.includes(`${p.length}×${p.width}`)) // فیلتر بر اساس ابعاد
+    );
+
+    // 3. استخراج نام‌های منحصر به فرد (Unique) از داده‌های فیلتر شده و مرتب‌سازی آنها
+    const uniquePartNames = [...new Set(relevantData.map(p => p.name))].sort((a, b) => a.localeCompare(b, 'fa'));
+
+    // 4. ساخت گروه چک‌باکس برای نام‌های قطعه
+    createFilterCheckboxGroup('partNames', uniquePartNames, 'analysis-');
+}
+
 function bindCoilAnalysisEventListeners() {
-    document.getElementById('addAnalysisPartBtn').addEventListener('click', saveAnalysisPart);
+    document.getElementById('btnImportAnalysisParts').addEventListener('click', () => importFromXLSX('analysis'));
+	document.getElementById('addAnalysisPartBtn').addEventListener('click', saveAnalysisPart);
     document.getElementById('cancelAnalysisPartBtn').addEventListener('click', cancelAnalysisPartEdit);
     document.getElementById('runCoilAnalysisBtn').addEventListener('click', runCoilAnalysis);
     
@@ -5945,6 +6009,199 @@ function cancelAnalysisPartEdit() {
     addButton.className = 'btn btn-primary';
     cancelButton.style.display = 'none';
 }
+
+// FINAL REPLACEMENT for processImportedAnalysisParts with UNIQUE NAME VALIDATION
+
+async function processImportedAnalysisParts(data) {
+    // 1. Pre-processing (بدون تغییر)
+    const fatalErrors = [];
+    const rawPartsData = [];
+
+    data.forEach((row, index) => {
+        const rowIndex = index + 2;
+        const part = {
+            id: 'AP_IMPORT_' + Date.now() + index,
+            name: row['نام قطعه']?.trim(),
+            length: parseFloat(row['طول قطعه']),
+            width: parseFloat(row['عرض قطعه']),
+            type: row['نوع ورق']?.trim(),
+            feature: row['ویژگی ورق']?.trim(),
+            thickness: parseFloat(row['ضخامت ورق'])
+        };
+        if (!part.name || isNaN(part.length) || isNaN(part.width) || !part.type || !part.feature || isNaN(part.thickness)) {
+            fatalErrors.push(`ردیف ${rowIndex}: داده‌های ناقص. ستون‌های نام، طول، عرض، نوع، ویژگی و ضخامت ورق الزامی هستند.`);
+            return;
+        }
+        rawPartsData.push(part);
+    });
+
+    if (fatalErrors.length > 0) {
+        showAlert("ورود اطلاعات لغو شد. خطاهای زیر را در فایل اکسل برطرف کنید:\n\n" + fatalErrors.join("\n"));
+        return;
+    }
+    if (rawPartsData.length === 0) {
+        alert("هیچ داده معتبری برای ورود در فایل یافت نشد.");
+        return;
+    }
+
+    // 2. Setup and show filter modal (بدون تغییر)
+    tempImportData = rawPartsData;
+    setupAnalysisImportFilters();
+    document.getElementById('importFilterModal').style.display = 'flex';
+
+    const applyBtn = document.getElementById('applyImportFilterBtn');
+
+    const applyFilterHandler = async () => {
+        // 3. Get all filter values (بدون تغییر)
+        const selectedTypes = getSelectedFilterValues('types', 'analysis-');
+        const selectedFeatures = getSelectedFilterValues('features', 'analysis-');
+        const selectedThicknesses = getSelectedFilterValues('thicknesses', 'analysis-').map(t => parseFloat(t));
+        const selectedDimensions = getSelectedFilterValues('dimensions', 'analysis-');
+        const selectedPartNames = getSelectedFilterValues('partNames', 'analysis-');
+
+        const finalPartsToImport = tempImportData.filter(part => {
+            const dimensionString = `${part.length}×${part.width}`;
+            return (selectedTypes.length === 0 || selectedTypes.includes(part.type)) &&
+                   (selectedFeatures.length === 0 || selectedFeatures.includes(part.feature)) &&
+                   (selectedThicknesses.length === 0 || selectedThicknesses.includes(part.thickness)) &&
+                   (selectedDimensions.length === 0 || selectedDimensions.includes(dimensionString)) &&
+                   (selectedPartNames.length === 0 || selectedPartNames.includes(part.name));
+        });
+
+        // --------------------------------------------------------------------------
+        // --> تغییر کلیدی: منطق جدید برای اعتبار سنجی
+        // --------------------------------------------------------------------------
+
+        // 4. تعیین لیست نهایی نام‌های منحصر به فرد برای اعتبار‌سنجی
+        const uniquePartNamesForValidation = (selectedPartNames.length > 0)
+            ? selectedPartNames // اگر کاربر صراحتاً نام‌ها را انتخاب کرده، از همان لیست استفاده کن
+            : [...new Set(finalPartsToImport.map(p => p.name))]; // در غیر اینصورت (حالت انتخاب همه)، از داده‌های فیلتر شده بساز
+
+        // 5. اعمال قوانین اعتبار‌سنجی بر اساس لیست جدید
+        if (uniquePartNamesForValidation.length > 2) {
+            showAlert(`خطا: شما ${uniquePartNamesForValidation.length} قطعه منحصر به فرد را انتخاب کرده‌اید. برای تحلیل کویل، حداکثر می‌توان ۲ قطعه را انتخاب کرد.`);
+            return;
+        }
+        if (uniquePartNamesForValidation.length === 0) {
+            alert("با توجه به فیلتر انتخابی، هیچ قطعه‌ای برای ورود وجود ندارد.");
+            document.getElementById('importFilterModal').style.display = 'none';
+            return;
+        }
+        if (uniquePartNamesForValidation.length === 2) {
+            // برای بررسی مشخصات، اولین نمونه از هر قطعه را در داده‌های فیلتر شده پیدا می‌کنیم
+            const part1 = finalPartsToImport.find(p => p.name === uniquePartNamesForValidation[0]);
+            const part2 = finalPartsToImport.find(p => p.name === uniquePartNamesForValidation[1]);
+
+            if (part1 && part2 && (part1.type !== part2.type || part1.feature !== part2.feature || part1.thickness !== part2.thickness)) {
+                alert(`خطا: دو قطعه انتخاب شده باید دارای نوع ورق، ویژگی و ضخامت یکسان باشند.`);
+                return;
+            }
+        }
+        // --------------------------------------------------------------------------
+        // --> پایان تغییرات کلیدی
+        // --------------------------------------------------------------------------
+
+        // 6. بستن مودال و نمایش پیام تایید (بدون تغییر)
+        document.getElementById('importFilterModal').style.display = 'none';
+
+        const userConfirmed = await showConfirmationModal(`تعداد ${uniquePartNamesForValidation.length} قطعه منحصر به فرد انتخاب شد. آیا لیست فعلی تحلیل با این موارد جایگزین شود؟`);
+
+        if (userConfirmed) {
+            // برای جلوگیری از ورود قطعات تکراری، یکبار دیگر لیست را بر اساس نام منحصر به فرد می‌کنیم
+            const finalUniquePartsToAdd = [];
+            const seenNames = new Set();
+            finalPartsToImport.forEach(part => {
+                // فقط قطعاتی را اضافه کن که نامشان در لیست اعتبار‌سنجی ما وجود دارد و قبلا اضافه نشده
+                if(uniquePartNamesForValidation.includes(part.name) && !seenNames.has(part.name)){
+                    finalUniquePartsToAdd.push(part);
+                    seenNames.add(part.name);
+                }
+            });
+
+            analysisParts = finalUniquePartsToAdd.map(p => ({
+                id: 'AP' + Date.now() + Math.random(),
+                name: p.name,
+                length: p.length,
+                width: p.width
+            }));
+
+            renderAnalysisPartList();
+            document.getElementById('runCoilAnalysisBtn').disabled = false;
+            document.getElementById('enableSlittingCheckbox').disabled = analysisParts.length !== 2;
+            alert('قطعات با موفقیت به لیست تحلیل اضافه شدند.');
+        }
+
+        // 7. Cleanup (بدون تغییر)
+        tempImportData = [];
+        currentImportType = null;
+        applyBtn.removeEventListener('click', applyFilterHandler);
+    };
+
+    applyBtn.replaceWith(applyBtn.cloneNode(true));
+    document.getElementById('applyImportFilterBtn').addEventListener('click', applyFilterHandler);
+}
+function setupAnalysisImportFilters() {
+    currentImportType = 'analysis';
+    const grid = document.getElementById('importFilterGrid');
+    // START OF CHANGE: Replaced parts with dimensions
+    grid.innerHTML = `
+        <div data-filter-group="types"><h3>نوع ورق</h3></div>
+        <div data-filter-group="features"><h3>ویژگی ورق</h3></div>
+        <div data-filter-group="thicknesses"><h3>ضخامت</h3></div>
+        <div data-filter-group="dimensions"><h3>ابعاد (طول×عرض)</h3></div>
+		<div data-filter-group="partNames"><h3>نام قطعه</h3></div>
+    `;
+    // END OF CHANGE
+    const uniqueTypes = [...new Set(tempImportData.map(p => p.type))].sort((a, b) => a.localeCompare(b, 'fa'));
+    createFilterCheckboxGroup('types', uniqueTypes, 'analysis-');
+    updateAnalysisFeatureFilter();
+}
+
+
+function updateAnalysisFeatureFilter() {
+    const selectedTypes = getSelectedFilterValues('types', 'analysis-');
+    const relevantData = selectedTypes.length > 0 ? tempImportData.filter(p => selectedTypes.includes(p.type)) : tempImportData;
+    const uniqueFeatures = [...new Set(relevantData.map(p => p.feature))].sort((a, b) => a.localeCompare(b, 'fa'));
+    createFilterCheckboxGroup('features', uniqueFeatures, 'analysis-');
+    updateAnalysisThicknessFilter();
+}
+
+function updateAnalysisThicknessFilter() {
+    const selectedTypes = getSelectedFilterValues('types', 'analysis-');
+    const selectedFeatures = getSelectedFilterValues('features', 'analysis-');
+    const relevantData = tempImportData.filter(p => 
+        (selectedTypes.length === 0 || selectedTypes.includes(p.type)) &&
+        (selectedFeatures.length === 0 || selectedFeatures.includes(p.feature))
+    );
+    const uniqueThicknesses = [...new Set(relevantData.map(p => p.thickness))].sort((a, b) => a - b);
+    createFilterCheckboxGroup('thicknesses', uniqueThicknesses, 'analysis-');
+    // START OF CHANGE: Call the new dimension filter function
+    updateAnalysisDimensionFilter();
+    // END OF CHANGE
+}
+function updateAnalysisDimensionFilter() { // Renamed from updateAnalysisPartNameFilter
+    const selectedTypes = getSelectedFilterValues('types', 'analysis-');
+    const selectedFeatures = getSelectedFilterValues('features', 'analysis-');
+    const selectedThicknesses = getSelectedFilterValues('thicknesses', 'analysis-').map(parseFloat);
+    const relevantData = tempImportData.filter(p => 
+        (selectedTypes.length === 0 || selectedTypes.includes(p.type)) &&
+        (selectedFeatures.length === 0 || selectedFeatures.includes(p.feature)) &&
+        (selectedThicknesses.length === 0 || selectedThicknesses.includes(p.thickness))
+    );
+    // START OF CHANGE: Create dimension strings and use them for filtering
+    const uniqueDimensions = [...new Set(relevantData.map(p => `${p.length}×${p.width}`))]
+        .sort((a, b) => {
+            const [lenA] = a.split('×').map(Number);
+            const [lenB] = b.split('×').map(Number);
+            return lenB - lenA; // Sort by length descending
+        });
+    
+    // We pass the full data to the create function to have access to the original part ID
+    createFilterCheckboxGroup('dimensions', uniqueDimensions, 'analysis-', true);
+	updateAnalysisPartNameFilter();
+}
+
+
 </script>
 </body>
 </html>
