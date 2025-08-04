@@ -366,6 +366,14 @@
         .company-code-suffix:focus {
             outline: none;
         }
+		#coilUsageDetailsContainer {
+            flex-grow: 1; /* فضای باقی‌مانده را پر می‌کند */
+            overflow-y: auto; /* اسکرول عمودی را فعال می‌کند */
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fcfcfc;
+            /* پدینگ حذف شد تا هدر جدول به لبه بالا بچسبد */
+        }
         .input-item label {
             margin-bottom: 8px;
             font-weight: 700;
@@ -999,7 +1007,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.0.5
+// SCRIPT VERSION: 6.0.6
 // Author: Saeed Golestani
 // Date: 2024-09-05
 // Changes:
@@ -1009,12 +1017,12 @@
 //    and slit) for a given width, ensuring the absolute best option is chosen.
 // 3. (REFACTOR) Simplified the `runCoilAnalysis` function for standard widths; it
 //    now correctly relies on the improved `findBestLayoutForStandardWidth`.
-// 4. (VERSION) Version updated to 6.0.5.
+// 4. (VERSION) Version updated to 6.0.6.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.0.5';
+const APP_VERSION = '6.0.6';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -1369,7 +1377,7 @@ function buildPageHTML() {
 				
 				<hr style="margin: 25px 0 15px 0;">
 				<h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0;">قطعات استفاده کننده از این کویل</h3>
-				<div id="coilUsageDetailsContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #fcfcfc;">
+				<div id="coilUsageDetailsContainer">
 					<p style="text-align: center; color: #6c757d; margin-top: 20px;">برای مشاهده جزئیات، روی یک ردیف در جدول کویل‌ها کلیک کنید.</p>
 				</div>
             </div>
@@ -1402,6 +1410,12 @@ function buildPageHTML() {
                     <button id="sheetSubmitBtn" class="btn btn-primary">افزودن ابعاد</button>
                     <button id="sheetCancelBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                 </div>
+				<div style="margin-top: 25px;">
+					<h3 style="margin-top: 0; font-size: 1.1em; border-bottom: 2px solid #e9ecef; padding-bottom: 8px;">فیلتر بر اساس نام قطعه</h3>
+					<div id="partNameFilterContainer" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
+						<p style="text-align: center; color: #6c757d; margin: 0;">ابتدا نوع، ویژگی و ضخامت ورق را انتخاب کنید.</p>
+					</div>
+				</div>
                 <hr style="margin: 25px 0 15px 0;">
                 <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0;">کویل‌های منطبق با قطعات لیست</h3>
                 <div id="matchingCoilsContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #fcfcfc;">
@@ -1695,6 +1709,7 @@ function bindEventListeners() {
 			if (target.closest('[data-filter-group="types"]')) updateSheetFeatureFilter();
 			else if (target.closest('[data-filter-group="features"]')) updateSheetThicknessFilter();
 			else if (target.closest('[data-filter-group="thicknesses"]')) updateSheetDimensionFilter();
+			else if (target.closest('[data-filter-group="dimensions"]')) updateSheetPartNameFilter();
 
 		} else if (currentImportType === 'coils') {
 			if (target.closest('[data-filter-group="types"]')) updateCoilFeatureFilter();
@@ -1755,6 +1770,7 @@ function bindEventListeners() {
             else if (target.closest('[data-filter-group="thicknesses"]')) updateCoilWidthFilter();
         }
     });
+	document.getElementById('partNameFilterContainer').addEventListener('change', renderSheetOrderList);
 }
 
 // --- UI & NAVIGATION (NEW TAB SYSTEM) ---
@@ -2949,35 +2965,48 @@ function processImportedSheets(data, replace) {
     const applyBtn = document.getElementById('applyImportFilterBtn');
 
     const applyFilterHandler = () => {
-        const selectedTypes = getSelectedFilterValues('types'); 
-        const selectedFeatures = getSelectedFilterValues('features');
-        const selectedThicknesses = getSelectedFilterValues('thicknesses').map(t => parseFloat(t));
-        const selectedDimensions = getSelectedFilterValues('dimensions');
-        
-        const finalSheetsToImport = tempImportData.filter(sheet =>
-            (selectedTypes.length === 0 || selectedTypes.includes(sheet.type)) &&
-            (selectedFeatures.length === 0 || selectedFeatures.includes(sheet.feature)) &&
-            (selectedThicknesses.length === 0 || selectedThicknesses.includes(sheet.thickness)) &&
-            (selectedDimensions.length === 0 || selectedDimensions.includes(`${sheet.length}×${sheet.width}`))
-        );
-        
-        document.getElementById('importFilterModal').style.display = 'none';
-        tempImportData = []; 
-        currentImportType = null;
-        
-        if (finalSheetsToImport.length === 0) { 
-            alert("با توجه به فیلتر، هیچ ردیفی برای ورود وجود ندارد."); 
-            return; 
-        }
-        
-        if (replace) sheetOrders = finalSheetsToImport;
-        else sheetOrders.push(...finalSheetsToImport);
-        
-        renderSheetOrderList();
-        saveDataToLocalStorage();
-        alert(`عملیات با موفقیت انجام شد.\n\n${finalSheetsToImport.length} سفارش برش جدید از فایل BOM وارد شد.`);
-        applyBtn.removeEventListener('click', applyFilterHandler);
-    };
+		// ۱. خواندن مقادیر همه فیلترها
+		const selectedTypes = getSelectedFilterValues('types');
+		const selectedFeatures = getSelectedFilterValues('features');
+		const selectedThicknesses = getSelectedFilterValues('thicknesses').map(t => parseFloat(t));
+		const selectedDimensions = getSelectedFilterValues('dimensions');
+		const selectedPartNames = getSelectedFilterValues('partNames'); // <-- خواندن فیلتر جدید
+
+		// ۲. ساخت نقشه کد به نام برای اعمال فیلتر نام
+		const partCodeToNameMap = new Map();
+		getUniquePartsFromBOM().forEach(part => {
+			partCodeToNameMap.set(part.code, part.name);
+		});
+
+		// ۳. فیلتر کردن نهایی داده‌ها با احتساب فیلتر نام قطعه
+		const finalSheetsToImport = tempImportData.filter(sheet => {
+			const partName = partCodeToNameMap.get(sheet.companyCode);
+			return (selectedTypes.length === 0 || selectedTypes.includes(sheet.type)) &&
+				   (selectedFeatures.length === 0 || selectedFeatures.includes(sheet.feature)) &&
+				   (selectedThicknesses.length === 0 || selectedThicknesses.includes(sheet.thickness)) &&
+				   (selectedDimensions.length === 0 || selectedDimensions.includes(`${sheet.length}×${sheet.width}`)) &&
+				   (selectedPartNames.length === 0 || (partName && selectedPartNames.includes(partName))); // <-- اعمال فیلتر جدید
+		});
+
+		// ۴. بقیه تابع بدون تغییر
+		document.getElementById('importFilterModal').style.display = 'none';
+		tempImportData = [];
+		currentImportType = null;
+
+		if (finalSheetsToImport.length === 0) {
+			alert("با توجه به فیلتر، هیچ ردیفی برای ورود وجود ندارد.");
+			return;
+		}
+
+		if (replace) sheetOrders = finalSheetsToImport;
+		else sheetOrders.push(...finalSheetsToImport);
+
+		renderSheetOrderList();
+		renderPartNameFilter(); // این خط را از قبل اضافه کرده بودیم و صحیح است
+		saveDataToLocalStorage();
+		alert(`عملیات با موفقیت انجام شد.\n\n${finalSheetsToImport.length} سفارش برش جدید از فایل BOM وارد شد.`);
+		applyBtn.removeEventListener('click', applyFilterHandler);
+	};
 
     applyBtn.replaceWith(applyBtn.cloneNode(true));
     document.getElementById('applyImportFilterBtn').addEventListener('click', applyFilterHandler);
@@ -3043,8 +3072,6 @@ function processImportedWip(data) {
     }
 }
 
-
-// --- Import Filter UI ---
 function setupSheetImportFilters() {
     currentImportType = 'sheets';
     const grid = document.getElementById('importFilterGrid');
@@ -3053,7 +3080,9 @@ function setupSheetImportFilters() {
         <div data-filter-group="features"><h3>ویژگی ورق</h3></div>
         <div data-filter-group="thicknesses"><h3>ضخامت</h3></div>
         <div data-filter-group="dimensions"><h3>ابعاد (طول×عرض)</h3></div>
-    `;
+        <div data-filter-group="partNames"><h3>نام قطعه</h3></div> 
+    `; // <-- ستون جدید اضافه شد
+
     const uniqueTypes = [...new Set(tempImportData.map(s => s.type))].sort((a, b) => a.localeCompare(b, 'fa'));
     createFilterCheckboxGroup('types', uniqueTypes);
     updateSheetFeatureFilter();
@@ -3065,6 +3094,35 @@ function updateSheetFeatureFilter() {
     const uniqueFeatures = [...new Set(relevantData.map(s => s.feature))].sort((a, b) => a.localeCompare(b, 'fa'));
     createFilterCheckboxGroup('features', uniqueFeatures);
     updateSheetThicknessFilter();
+}
+
+function updateSheetPartNameFilter() {
+    // ۱. دریافت مقادیر انتخاب شده از فیلترهای قبلی
+    const selectedTypes = getSelectedFilterValues('types');
+    const selectedFeatures = getSelectedFilterValues('features');
+    const selectedThicknesses = getSelectedFilterValues('thicknesses').map(parseFloat);
+    const selectedDimensions = getSelectedFilterValues('dimensions');
+
+    // ۲. فیلتر کردن داده‌های موقت بر اساس انتخاب‌های کاربر
+    const relevantData = tempImportData.filter(s =>
+        (selectedTypes.length === 0 || selectedTypes.includes(s.type)) &&
+        (selectedFeatures.length === 0 || selectedFeatures.includes(s.feature)) &&
+        (selectedThicknesses.length === 0 || selectedThicknesses.includes(s.thickness)) &&
+        (selectedDimensions.length === 0 || selectedDimensions.includes(`${s.length}×${s.width}`))
+    );
+
+    // ۳. استخراج نام‌های منحصر به فرد از داده‌های فیلتر شده و مرتب‌سازی
+    // برای این کار باید نام‌ها را از BOM استخراج کنیم
+    const partCodeToNameMap = new Map();
+    getUniquePartsFromBOM().forEach(part => {
+        partCodeToNameMap.set(part.code, part.name);
+    });
+
+    const uniquePartNames = [...new Set(relevantData.map(s => partCodeToNameMap.get(s.companyCode)).filter(Boolean))]
+                                .sort((a, b) => a.localeCompare(b, 'fa'));
+
+    // ۴. ساخت گروه چک‌باکس برای نام‌های قطعه
+    createFilterCheckboxGroup('partNames', uniquePartNames);
 }
 
 function updateSheetThicknessFilter() {
@@ -3083,7 +3141,7 @@ function updateSheetDimensionFilter() {
     const selectedTypes = getSelectedFilterValues('types');
     const selectedFeatures = getSelectedFilterValues('features');
     const selectedThicknesses = getSelectedFilterValues('thicknesses').map(parseFloat);
-    const relevantData = tempImportData.filter(s => 
+    const relevantData = tempImportData.filter(s =>
         (selectedTypes.length === 0 || selectedTypes.includes(s.type)) &&
         (selectedFeatures.length === 0 || selectedFeatures.includes(s.feature)) &&
         (selectedThicknesses.length === 0 || selectedThicknesses.includes(s.thickness))
@@ -3095,6 +3153,8 @@ function updateSheetDimensionFilter() {
             return lenB - lenA;
         });
     createFilterCheckboxGroup('dimensions', uniqueDimensions);
+
+    updateSheetPartNameFilter(); // <-- این خط جدید است
 }
 
 function setupCoilImportFilters() {
@@ -3298,7 +3358,8 @@ function selectCoil(coilId) {
 function renderCoilUsageDetails(coilId) {
     const container = document.getElementById('coilUsageDetailsContainer');
     if (!coilId) {
-        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">برای مشاهده جزئیات، روی یک ردیف در جدول کویل‌ها کلیک کنید.</p>';
+        // پیام راهنما با پدینگ داخلی
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">برای مشاهده جزئیات، روی یک ردیف در جدول کویل‌ها کلیک کنید.</p>';
         return;
     }
 
@@ -3325,7 +3386,8 @@ function renderCoilUsageDetails(coilId) {
     });
 
     if (foundParts.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">هیچ قطعه‌ای در محصولات (BOM) از این کویل به عنوان کویل ایده‌آل استفاده نمی‌کند.</p>';
+        // پیام "قطعه‌ای یافت نشد" با پدینگ داخلی
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 20px;">هیچ قطعه‌ای در محصولات (BOM) از این کویل به عنوان کویل ایده‌آل استفاده نمی‌کند.</p>';
         return;
     }
 
@@ -3339,21 +3401,20 @@ function renderCoilUsageDetails(coilId) {
         </tr>
     `).join('');
 
+    // جدول مستقیما داخل محفظه قرار می‌گیرد و از استایل هدر چسبان عمومی بهره می‌برد
     container.innerHTML = `
-        <div class="table-scroll-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>محصول</th>
-                        <th>نام قطعه</th>
-                        <th>کد قطعه</th>
-                        <th>ابعاد (م.م)</th>
-                        <th>ضایعات %</th>
-                    </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-        </div>`;
+        <table>
+            <thead>
+                <tr>
+                    <th>محصول</th>
+                    <th>نام قطعه</th>
+                    <th>کد قطعه</th>
+                    <th>ابعاد (م.م)</th>
+                    <th>ضایعات %</th>
+                </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+        </table>`;
 }
 
 // --- CRUD & RENDER FUNCTIONS (Coil, Sheet) ---
@@ -3638,10 +3699,12 @@ function resetSheetForm() {
     document.getElementById('sheetSubmitBtn').textContent = 'افزودن ابعاد';
     document.getElementById('sheetSubmitBtn').className = 'btn btn-primary';
     document.getElementById('sheetCancelBtn').style.display = 'none';
+	renderPartNameFilter();
 }
 
 function updateSheetDependencies() { 
     updateAvailableFeatures(); 
+	renderPartNameFilter();
 }
 
 function updateAvailableFeatures() {
@@ -3672,14 +3735,38 @@ function updateAvailableThicknesses() {
     
     populateSelectWithOptions(thicknessSelect, uniqueThicknesses);
     renderMatchingCoilsListForOrderList();
+    renderPartNameFilter(); 
 }
 
 function getVisibleSheetOrders() {
     let displayOrders = JSON.parse(JSON.stringify(sheetOrders));
+
+    // --- بخش جدید برای اعمال فیلتر نام قطعه ---
+    const selectedPartNames = Array.from(document.querySelectorAll('.part-name-filter-cb:checked'))
+                                   .map(cb => cb.value);
+    
+    // اگر حداقل یک نام انتخاب شده باشد و نه همه، فیلتر اعمال می‌شود
+    const allPartNameCheckboxes = document.querySelectorAll('.part-name-filter-cb');
+    if (selectedPartNames.length > 0 && selectedPartNames.length < allPartNameCheckboxes.length) {
+        // یک نقشه برای جستجوی سریع نام قطعه از روی کد می‌سازیم
+        const partCodeToNameMap = new Map();
+        const allBomParts = getUniquePartsFromBOM();
+        allBomParts.forEach(part => {
+            partCodeToNameMap.set(part.code, part.name);
+        });
+
+        displayOrders = displayOrders.filter(order => {
+            const partName = partCodeToNameMap.get(order.companyCode);
+            return partName && selectedPartNames.includes(partName);
+        });
+    }
+    // --- پایان بخش جدید ---
+
     displayOrders.forEach(order => {
         const density = settings.densities[order.type];
         order.calculatedWeight = density ? (order.length * order.width * order.thickness * density) / 1000000 : 0;
     });
+
     const searchableKeys = ['companyCode', 'type', 'feature', 'thickness', 'length', 'width', 'calculatedWeight'];
     displayOrders = filterData(displayOrders, sheetOrdersListState.searchTerm, searchableKeys);
     sortData(displayOrders, sheetOrdersListState.sortKey, sheetOrdersListState.sortDir);
@@ -3807,6 +3894,58 @@ function renderSheetOrderList() {
     renderMatchingCoilsListForOrderList();
 }
 
+
+function renderPartNameFilter() {
+    const container = document.getElementById('partNameFilterContainer');
+    if (!container) return;
+
+    // ۱. دریافت مقادیر انتخاب شده از فرم
+    const selectedType = document.getElementById('sheetType').value;
+    const selectedFeature = document.getElementById('sheetFeature').value;
+    const selectedThickness = document.getElementById('sheetThickness').value;
+
+    // اگر اطلاعات پایه انتخاب نشده باشند، فیلتر را خالی نشان بده
+    if (!selectedType || !selectedFeature || !selectedThickness) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">ابتدا نوع، ویژگی و ضخامت ورق را انتخاب کنید.</p>';
+        return;
+    }
+
+    // ۲. پیدا کردن نام قطعات مرتبط
+    // ابتدا یک نقشه (Map) برای جستجوی سریع نام قطعه از روی کد آن می‌سازیم
+    const partCodeToNameMap = new Map();
+    const allBomParts = getUniquePartsFromBOM();
+    allBomParts.forEach(part => {
+        partCodeToNameMap.set(part.code, part.name);
+    });
+
+    // حالا لیست ابعاد برش را بر اساس فیلترها محدود می‌کنیم
+    const relevantOrders = sheetOrders.filter(order =>
+        order.type === selectedType &&
+        order.feature === selectedFeature &&
+        order.thickness == selectedThickness // استفاده از == برای مقایسه رشته و عدد
+    );
+
+    // نام‌ها را استخراج و منحصر به فرد می‌کنیم
+    const uniquePartNames = new Set(
+        relevantOrders
+            .map(order => partCodeToNameMap.get(order.companyCode)) // نام را از روی کد پیدا کن
+            .filter(name => name) // موارد بدون نام را حذف کن
+    );
+
+    // ۳. ساخت HTML برای چک‌باکس‌ها
+    const sortedNames = Array.from(uniquePartNames).sort((a, b) => a.localeCompare(b, 'fa'));
+
+    if (sortedNames.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">قطعه‌ای با این مشخصات یافت نشد.</p>';
+    } else {
+        container.innerHTML = sortedNames.map(name => `
+            <div class="filter-option">
+                <input type="checkbox" id="part-filter-${name.replace(/\s/g, '-')}" value="${name}" class="part-name-filter-cb" checked>
+                <label for="part-filter-${name.replace(/\s/g, '-')}">${name}</label>
+            </div>
+        `).join('');
+    }
+}
 
 // --- EVENT DELEGATION HANDLERS ---
 function handleTableSort(listState, renderFunction, sortKey, productId = null) {
