@@ -2899,7 +2899,7 @@ async function processImportedCoils(data) {
 }
 
 
-function processImportedSheets(data, replace) {
+async function processImportedSheets(data, replace) {
     const fatalErrors = []; 
     const validatedSheets = []; 
     let ignoredNoCoilCount = 0; 
@@ -2908,9 +2908,15 @@ function processImportedSheets(data, replace) {
     const processedCodes = new Set(replace ? [] : sheetOrders.map(s => s.companyCode));
     const processedSpecs = new Set(replace ? [] : sheetOrders.map(s => `${s.type}-${s.feature}-${s.thickness}-${s.length}-${s.width}`));
 
+    // --- جدید: یک بار در ابتدا نقشه کد به نام را می‌سازیم ---
+    const partCodeToNameMap = new Map();
+    getUniquePartsFromBOM().forEach(part => {
+        partCodeToNameMap.set(part.code, part.name);
+    });
+    // --------------------------------------------------------
+
     data.forEach((row, index) => {
         const rowIndex = index + 2;
-        // Map new column names from BOM export to the sheetOrder structure
         const newSheet = {
             id: 'S' + Date.now() + Math.random() + index,
             companyCode: row['کد قطعه']?.toString().trim(),
@@ -2920,6 +2926,10 @@ function processImportedSheets(data, replace) {
             width: parseFloat(row['عرض قطعه']),
             thickness: parseFloat(row['ضخامت ورق'])
         };
+        
+        // --- جدید: نام قطعه را به شیء اضافه می‌کنیم ---
+        newSheet.name = partCodeToNameMap.get(newSheet.companyCode) || `[کد ناشناخته: ${newSheet.companyCode}]`;
+        // -------------------------------------------------
 
         const validationResult = validateSheetOrderFromImport(newSheet, rowIndex);
         if (validationResult.type === 'fatal') { 
@@ -2965,46 +2975,43 @@ function processImportedSheets(data, replace) {
     const applyBtn = document.getElementById('applyImportFilterBtn');
 
     const applyFilterHandler = () => {
-		// ۱. خواندن مقادیر همه فیلترها
 		const selectedTypes = getSelectedFilterValues('types');
 		const selectedFeatures = getSelectedFilterValues('features');
 		const selectedThicknesses = getSelectedFilterValues('thicknesses').map(t => parseFloat(t));
 		const selectedDimensions = getSelectedFilterValues('dimensions');
-		const selectedPartNames = getSelectedFilterValues('partNames'); // <-- خواندن فیلتر جدید
+		const selectedPartNames = getSelectedFilterValues('partNames');
 
-		// ۲. ساخت نقشه کد به نام برای اعمال فیلتر نام
-		const partCodeToNameMap = new Map();
-		getUniquePartsFromBOM().forEach(part => {
-			partCodeToNameMap.set(part.code, part.name);
-		});
-
-		// ۳. فیلتر کردن نهایی داده‌ها با احتساب فیلتر نام قطعه
+        // --- حالا فیلتر کردن نهایی بسیار ساده‌تر است ---
 		const finalSheetsToImport = tempImportData.filter(sheet => {
-			const partName = partCodeToNameMap.get(sheet.companyCode);
 			return (selectedTypes.length === 0 || selectedTypes.includes(sheet.type)) &&
 				   (selectedFeatures.length === 0 || selectedFeatures.includes(sheet.feature)) &&
 				   (selectedThicknesses.length === 0 || selectedThicknesses.includes(sheet.thickness)) &&
 				   (selectedDimensions.length === 0 || selectedDimensions.includes(`${sheet.length}×${sheet.width}`)) &&
-				   (selectedPartNames.length === 0 || (partName && selectedPartNames.includes(partName))); // <-- اعمال فیلتر جدید
+				   (selectedPartNames.length === 0 || selectedPartNames.includes(sheet.name));
 		});
+        // ----------------------------------------------------
 
-		// ۴. بقیه تابع بدون تغییر
 		document.getElementById('importFilterModal').style.display = 'none';
 		tempImportData = [];
 		currentImportType = null;
 
 		if (finalSheetsToImport.length === 0) {
 			alert("با توجه به فیلتر، هیچ ردیفی برای ورود وجود ندارد.");
+            applyBtn.removeEventListener('click', applyFilterHandler);
 			return;
 		}
 
-		if (replace) sheetOrders = finalSheetsToImport;
-		else sheetOrders.push(...finalSheetsToImport);
+        // --- مهم: هنگام افزودن به لیست اصلی، فیلد نام را حذف می‌کنیم تا ساختار داده اصلی تغییر نکند ---
+        const sheetsToAdd = finalSheetsToImport.map(({ name, ...rest }) => rest);
+        // -----------------------------------------------------------------------------------------
+		
+        if (replace) sheetOrders = sheetsToAdd;
+		else sheetOrders.push(...sheetsToAdd);
 
 		renderSheetOrderList();
-		renderPartNameFilter(); // این خط را از قبل اضافه کرده بودیم و صحیح است
+		renderPartNameFilter();
 		saveDataToLocalStorage();
-		alert(`عملیات با موفقیت انجام شد.\n\n${finalSheetsToImport.length} سفارش برش جدید از فایل BOM وارد شد.`);
+		alert(`عملیات با موفقیت انجام شد.\n\n${sheetsToAdd.length} سفارش برش جدید از فایل BOM وارد شد.`);
 		applyBtn.removeEventListener('click', applyFilterHandler);
 	};
 
@@ -3104,6 +3111,7 @@ function updateSheetPartNameFilter() {
     const selectedDimensions = getSelectedFilterValues('dimensions');
 
     // ۲. فیلتر کردن داده‌های موقت بر اساس انتخاب‌های کاربر
+    // حالا داده‌های ما دارای پراپرتی .name هستند!
     const relevantData = tempImportData.filter(s =>
         (selectedTypes.length === 0 || selectedTypes.includes(s.type)) &&
         (selectedFeatures.length === 0 || selectedFeatures.includes(s.feature)) &&
@@ -3112,13 +3120,8 @@ function updateSheetPartNameFilter() {
     );
 
     // ۳. استخراج نام‌های منحصر به فرد از داده‌های فیلتر شده و مرتب‌سازی
-    // برای این کار باید نام‌ها را از BOM استخراج کنیم
-    const partCodeToNameMap = new Map();
-    getUniquePartsFromBOM().forEach(part => {
-        partCodeToNameMap.set(part.code, part.name);
-    });
-
-    const uniquePartNames = [...new Set(relevantData.map(s => partCodeToNameMap.get(s.companyCode)).filter(Boolean))]
+    // دیگر نیازی به جستجو (lookup) نیست. مستقیماً از داده می‌خوانیم.
+    const uniquePartNames = [...new Set(relevantData.map(s => s.name))]
                                 .sort((a, b) => a.localeCompare(b, 'fa'));
 
     // ۴. ساخت گروه چک‌باکس برای نام‌های قطعه
