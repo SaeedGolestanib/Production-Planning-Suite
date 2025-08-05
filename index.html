@@ -885,7 +885,19 @@
 			padding-bottom: 10px;
 			margin-bottom: 20px;
 		}
-	
+		#analysisInputAndSettingsSection .scrollable-content {
+			overflow-y: auto; /* این خط اصلی‌ترین تغییر است و اسکرول عمودی را فعال می‌کند */
+			flex-grow: 1;
+			padding-right: 10px; /* ایجاد کمی فاصله برای نوار اسکرول */
+			margin-right: -10px; /* جبران فاصله ایجاد شده برای حفظ چیدمان */
+		}
+
+		/* استایل برای مخفی کردن اسکرول در حالت چاپ */
+		@media print {
+			#analysisInputAndSettingsSection .scrollable-content {
+				overflow-y: visible;
+			}
+		}
 	</style>
 </head>
 <body>
@@ -1011,7 +1023,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.0.7
+// SCRIPT VERSION: 6.0.8
 // Author: Saeed Golestani
 // Date: 2024-09-05
 // Changes:
@@ -1021,12 +1033,12 @@
 //    and slit) for a given width, ensuring the absolute best option is chosen.
 // 3. (REFACTOR) Simplified the `runCoilAnalysis` function for standard widths; it
 //    now correctly relies on the improved `findBestLayoutForStandardWidth`.
-// 4. (VERSION) Version updated to 6.0.7.
+// 4. (VERSION) Version updated to 6.0.8.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.0.7';
+const APP_VERSION = '6.0.8';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -5477,85 +5489,85 @@ function saveWipData() {
 }
 
 
-// --- NEW: COIL ANALYSIS MODULE ---
-// START OF CHANGES: Added slitting feature to Coil Analysis
 function buildCoilAnalysisPage() {
     document.getElementById('page-coil-analysis').innerHTML = `
         <div class="page-layout-container">
             <div class="analysis-section" id="analysisInputAndSettingsSection">
-                <h2>۱. ورود قطعات برای تحلیل</h2>
-                <div class="input-grid print-hide" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <div class="input-item"><label for="analysisPartName">نام قطعه:</label><input type="text" id="analysisPartName" placeholder="مثال: درب جدید"></div>
-                    <div class="input-item"><label for="analysisPartLength">طول (م.م):</label><input type="number" id="analysisPartLength"></div>
-                    <div class="input-item"><label for="analysisPartWidth">عرض (م.م):</label><input type="number" id="analysisPartWidth"></div>
-                </div>
-                <div class="form-buttons-container print-hide" style="margin-top: 15px;">
-                    <button id="addAnalysisPartBtn" class="btn btn-primary">افزودن به لیست تحلیل</button>
-                    <button id="cancelAnalysisPartBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
-                </div>
-				<div class="section-header" style="margin-top: 25px;">
-					<h3>لیست قطعات برای تحلیل</h3>
-					<div class="io-buttons">
-						<button id="btnImportAnalysisParts" class="btn btn-primary">ورود از Excel</button>
-					</div>
-				</div>
-				<div id="analysisPartListContainer" class="table-container" style="margin-top: 10px; min-height: 160px;"></div>
-                <hr>
-                <h2>۲. تنظیمات تحلیل</h2>
-                 <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px 20px;">
-                    <div class="input-item">
-                        <label for="maxAnalysisWasteInput">حداکثر ضایعات (%):</label>
-                        <input type="number" id="maxAnalysisWasteInput" value="5" class="print-hide">
-                        <span class="print-only-value" id="print-waste"></span>
+                <div class="scrollable-content">
+                    <h2>۱. ورود قطعات برای تحلیل</h2>
+                    <div class="input-grid print-hide" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                        <div class="input-item"><label for="analysisPartName">نام قطعه:</label><input type="text" id="analysisPartName" placeholder="مثال: درب جدید"></div>
+                        <div class="input-item"><label for="analysisPartLength">طول (م.م):</label><input type="number" id="analysisPartLength"></div>
+                        <div class="input-item"><label for="analysisPartWidth">عرض (م.م):</label><input type="number" id="analysisPartWidth"></div>
                     </div>
-                    <div class="input-item">
-                        <label for="maxAnalysisWidthInput">حداکثر عرض (م.م):</label>
-                        <input type="number" id="maxAnalysisWidthInput" value="1500" max="2500" class="print-hide">
-                        <span class="print-only-value" id="print-max-width"></span>
+                    <div class="form-buttons-container print-hide" style="margin-top: 15px;">
+                        <button id="addAnalysisPartBtn" class="btn btn-primary">افزودن به لیست تحلیل</button>
+                        <button id="cancelAnalysisPartBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                     </div>
-                     <div class="input-item">
-                        <label for="analysisStartWidthInput">شروع عرض (م.م):</label>
-                        <input type="number" id="analysisStartWidthInput" value="500" min="100" class="print-hide">
-                        <span class="print-only-value" id="print-start-width"></span>
-                    </div>
-                    <div class="input-item">
-                        <label for="analysisStepInput">گام افزایش (م.م):</label>
-                        <select id="analysisStepInput" class="print-hide">
-                            <option value="50">50</option>
-                            <option value="100" selected>100</option>
-                            <option value="150">150</option>
-                            <option value="200">200</option>
-                            <option value="250">250</option>
-                            <option value="300">300</option>
-                            <option value="350">350</option>
-                            <option value="400">400</option>
-                            <option value="450">450</option>
-                            <option value="500">500</option>
-                        </select>
-                        <span class="print-only-value" id="print-step"></span>
-                    </div>
-                </div>
-                <div class="input-item" style="margin-top: 15px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 5px; gap: 30px;" class="print-hide">
-                        <div style="display: flex; align-items: center;">
-                            <input type="checkbox" id="selectAllWidthsCheckbox" checked style="margin-left: 8px;">
-                            <label for="selectAllWidthsCheckbox" style="cursor: pointer; font-weight: bold; margin-bottom: 0;">عرض‌های استاندارد بازار</label>
-                        </div>
-                        <div style="display: flex; align-items: center;">
-                            <input type="checkbox" id="enableSlittingCheckbox" disabled>
-                            <label for="enableSlittingCheckbox" style="cursor: pointer; font-weight: bold; margin-bottom: 0;">فعال‌سازی طول بر شدن</label>
+                    <div class="section-header" style="margin-top: 25px;">
+                        <h3>لیست قطعات برای تحلیل</h3>
+                        <div class="io-buttons">
+                            <button id="btnImportAnalysisParts" class="btn btn-primary">ورود از Excel</button>
                         </div>
                     </div>
-                     <div id="standardWidthsContainer" class="print-hide" style="max-height: 160px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background: #f9f9f9; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; align-content: flex-start;"></div>
-                     <div class="print-only-summary">
-                         <p><strong>عرض‌های استاندارد انتخاب شده:</strong></p>
-                         <p id="print-selected-widths" style="word-break: break-word;"></p>
-                     </div>
-                </div>                
-				
-				<div class="form-buttons-container print-hide">
-                    <button id="runCoilAnalysisBtn" class="btn btn-success btn-main-action" disabled>یافتن کویل ایده‌آل</button>
-                    <button id="printAnalysisBtn" class="btn btn-info" disabled>چاپ گزارش</button>
+                    <div id="analysisPartListContainer" class="table-container" style="margin-top: 10px; min-height: 160px;"></div>
+                    <hr>
+                    <h2>۲. تنظیمات تحلیل</h2>
+                     <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px 20px;">
+                        <div class="input-item">
+                            <label for="maxAnalysisWasteInput">حداکثر ضایعات (%):</label>
+                            <input type="number" id="maxAnalysisWasteInput" value="5" class="print-hide">
+                            <span class="print-only-value" id="print-waste"></span>
+                        </div>
+                        <div class="input-item">
+                            <label for="maxAnalysisWidthInput">حداکثر عرض (م.م):</label>
+                            <input type="number" id="maxAnalysisWidthInput" value="1500" max="2500" class="print-hide">
+                            <span class="print-only-value" id="print-max-width"></span>
+                        </div>
+                         <div class="input-item">
+                            <label for="analysisStartWidthInput">شروع عرض (م.م):</label>
+                            <input type="number" id="analysisStartWidthInput" value="500" min="100" class="print-hide">
+                            <span class="print-only-value" id="print-start-width"></span>
+                        </div>
+                        <div class="input-item">
+                            <label for="analysisStepInput">گام افزایش (م.م):</label>
+                            <select id="analysisStepInput" class="print-hide">
+                                <option value="50">50</option>
+                                <option value="100" selected>100</option>
+                                <option value="150">150</option>
+                                <option value="200">200</option>
+                                <option value="250">250</option>
+                                <option value="300">300</option>
+                                <option value="350">350</option>
+                                <option value="400">400</option>
+                                <option value="450">450</option>
+                                <option value="500">500</option>
+                            </select>
+                            <span class="print-only-value" id="print-step"></span>
+                        </div>
+                    </div>
+                    <div class="input-item" style="margin-top: 15px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 5px; gap: 30px;" class="print-hide">
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" id="selectAllWidthsCheckbox" checked style="margin-left: 8px;">
+                                <label for="selectAllWidthsCheckbox" style="cursor: pointer; font-weight: bold; margin-bottom: 0;">عرض‌های استاندارد بازار</label>
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <input type="checkbox" id="enableSlittingCheckbox" disabled>
+                                <label for="enableSlittingCheckbox" style="cursor: pointer; font-weight: bold; margin-bottom: 0;">فعال‌سازی طول بر شدن</label>
+                            </div>
+                        </div>
+                         <div id="standardWidthsContainer" class="print-hide" style="max-height: 160px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background: #f9f9f9; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; align-content: flex-start;"></div>
+                         <div class="print-only-summary">
+                             <p><strong>عرض‌های استاندارد انتخاب شده:</strong></p>
+                             <p id="print-selected-widths" style="word-break: break-word;"></p>
+                         </div>
+                    </div>                
+                    
+                    <div class="form-buttons-container print-hide">
+                        <button id="runCoilAnalysisBtn" class="btn btn-success btn-main-action" disabled>یافتن کویل ایده‌آل</button>
+                        <button id="printAnalysisBtn" class="btn btn-info" disabled>چاپ گزارش</button>
+                    </div>
                 </div>
             </div>
             <div class="analysis-section" id="analysisResultsSection">
@@ -5582,7 +5594,6 @@ function buildCoilAnalysisPage() {
     
     renderStandardWidthsCheckboxes();
 }
-
 function updateAnalysisPartNameFilter() {
     // 1. دریافت مقادیر انتخاب شده از تمام فیلترهای قبلی
     const selectedTypes = getSelectedFilterValues('types', 'analysis-');
