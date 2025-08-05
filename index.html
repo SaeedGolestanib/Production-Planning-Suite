@@ -533,15 +533,19 @@
             background-color: #e6e9fd !important;
             font-weight: bold;
         }
-		tr.active-batch td {
-		background-color: #e6e9fd !important;
-		font-weight: bold;
+		tr.active-sheet-order td {
+			background-color: #e6e9fd !important; /* رنگ آبی روشن مشابه بقیه */
+			font-weight: bold;
+			cursor: pointer;
 		}
-		/* این استایل جدید را اضافه کنید */
 		tr.active-coil td {
 			background-color: #d1ecf1 !important; /* رنگ فیروزه‌ای روشن */
 			font-weight: bold;
 			cursor: pointer;
+		}
+		tr.active-batch td {
+		background-color: #e6e9fd !important;
+		font-weight: bold;
 		}
         .modal {
             display: none;
@@ -1007,7 +1011,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.0.6
+// SCRIPT VERSION: 6.0.7
 // Author: Saeed Golestani
 // Date: 2024-09-05
 // Changes:
@@ -1017,12 +1021,12 @@
 //    and slit) for a given width, ensuring the absolute best option is chosen.
 // 3. (REFACTOR) Simplified the `runCoilAnalysis` function for standard widths; it
 //    now correctly relies on the improved `findBestLayoutForStandardWidth`.
-// 4. (VERSION) Version updated to 6.0.6.
+// 4. (VERSION) Version updated to 6.0.7.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.0.6';
+const APP_VERSION = '6.0.7';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -1045,6 +1049,7 @@ let editingProductId = null;
 let editingPartId = null;
 let selectedBatchId = null;
 let selectedCoilId = null;
+let selectedSheetOrderId = null;
 let showOnlyPlannedProducts = true;
 let tempImportData = [];
 let currentImportType = null;
@@ -1052,6 +1057,7 @@ let fullShortageReportData = [];
 let lastActivePage = 'page-coils';
 let searchTimeout = null;
 let editingAnalysisPartId = null;
+
 
 // Table display states
 let coilListState = { searchTerm: '', sortKey: 'type', sortDir: 'asc' };
@@ -1410,12 +1416,7 @@ function buildPageHTML() {
                     <button id="sheetSubmitBtn" class="btn btn-primary">افزودن ابعاد</button>
                     <button id="sheetCancelBtn" class="btn btn-secondary" style="display: none;">لغو ویرایش</button>
                 </div>
-				<div style="margin-top: 25px;">
-					<h3 style="margin-top: 0; font-size: 1.1em; border-bottom: 2px solid #e9ecef; padding-bottom: 8px;">فیلتر بر اساس نام قطعه</h3>
-					<div id="partNameFilterContainer" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #f9f9f9;">
-						<p style="text-align: center; color: #6c757d; margin: 0;">ابتدا نوع، ویژگی و ضخامت ورق را انتخاب کنید.</p>
-					</div>
-				</div>
+				
                 <hr style="margin: 25px 0 15px 0;">
                 <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1.1em; flex-shrink: 0;">کویل‌های منطبق با قطعات لیست</h3>
                 <div id="matchingCoilsContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background-color: #fcfcfc;">
@@ -1770,7 +1771,6 @@ function bindEventListeners() {
             else if (target.closest('[data-filter-group="thicknesses"]')) updateCoilWidthFilter();
         }
     });
-	document.getElementById('partNameFilterContainer').addEventListener('change', renderSheetOrderList);
 }
 
 // --- UI & NAVIGATION (NEW TAB SYSTEM) ---
@@ -2385,8 +2385,10 @@ function clearAllSheetOrders() {
     }
     if (confirm('آیا مطمئن هستید که می‌خواهید لیست تمام ابعاد برش را پاک کنید؟')) {
         sheetOrders = [];
+        selectedSheetOrderId = null; // <-- این خط را اضافه کنید
         saveDataToLocalStorage();
         renderSheetOrderList();
+        renderMatchingCoilsListForOrderList(); // <-- این خط را اضافه کنید
         alert('لیست ابعاد برش با موفقیت پاک شد.');
     }
 }
@@ -3007,7 +3009,6 @@ async function processImportedSheets(data, replace) {
 		else sheetOrders.push(...sheetsToAdd);
 
 		renderSheetOrderList();
-		renderPartNameFilter();
 		saveDataToLocalStorage();
 		alert(`عملیات با موفقیت انجام شد.\n\n${sheetsToAdd.length} سفارش برش جدید از فایل BOM وارد شد.`);
 		applyBtn.removeEventListener('click', applyFilterHandler);
@@ -3679,15 +3680,22 @@ function editSheetOrder(id) {
 
 function deleteSheetOrder(id) {
     if (confirm('آیا از حذف این ابعاد برش مطمئن هستید؟')) {
+        // اگر آیتمی که حذف می‌شود، همان آیتم انتخاب شده است، آن را از حافظه پاک کن
+        if (selectedSheetOrderId === id) {
+            selectedSheetOrderId = null;
+        }
         sheetOrders = sheetOrders.filter(s => s.id !== id);
         renderSheetOrderList();
+        renderMatchingCoilsListForOrderList(); // <-- این خط را اضافه کنید تا لیست کویل هم آپدیت شود
         saveDataToLocalStorage();
     }
 }
 
 function cancelSheetEdit() {
     editingSheetId = null;
+    selectedSheetOrderId = null; // <-- این خط را اضافه کنید
     resetSheetForm();
+    renderMatchingCoilsListForOrderList(); // <-- این خط را اضافه کنید
 }
 
 function resetSheetForm() {
@@ -3699,12 +3707,10 @@ function resetSheetForm() {
     document.getElementById('sheetSubmitBtn').textContent = 'افزودن ابعاد';
     document.getElementById('sheetSubmitBtn').className = 'btn btn-primary';
     document.getElementById('sheetCancelBtn').style.display = 'none';
-	renderPartNameFilter();
 }
 
 function updateSheetDependencies() { 
     updateAvailableFeatures(); 
-	renderPartNameFilter();
 }
 
 function updateAvailableFeatures() {
@@ -3735,32 +3741,10 @@ function updateAvailableThicknesses() {
     
     populateSelectWithOptions(thicknessSelect, uniqueThicknesses);
     renderMatchingCoilsListForOrderList();
-    renderPartNameFilter(); 
 }
 
 function getVisibleSheetOrders() {
     let displayOrders = JSON.parse(JSON.stringify(sheetOrders));
-
-    // --- بخش جدید برای اعمال فیلتر نام قطعه ---
-    const selectedPartNames = Array.from(document.querySelectorAll('.part-name-filter-cb:checked'))
-                                   .map(cb => cb.value);
-    
-    // اگر حداقل یک نام انتخاب شده باشد و نه همه، فیلتر اعمال می‌شود
-    const allPartNameCheckboxes = document.querySelectorAll('.part-name-filter-cb');
-    if (selectedPartNames.length > 0 && selectedPartNames.length < allPartNameCheckboxes.length) {
-        // یک نقشه برای جستجوی سریع نام قطعه از روی کد می‌سازیم
-        const partCodeToNameMap = new Map();
-        const allBomParts = getUniquePartsFromBOM();
-        allBomParts.forEach(part => {
-            partCodeToNameMap.set(part.code, part.name);
-        });
-
-        displayOrders = displayOrders.filter(order => {
-            const partName = partCodeToNameMap.get(order.companyCode);
-            return partName && selectedPartNames.includes(partName);
-        });
-    }
-    // --- پایان بخش جدید ---
 
     displayOrders.forEach(order => {
         const density = settings.densities[order.type];
@@ -3777,62 +3761,71 @@ function renderMatchingCoilsListForOrderList() {
     const container = document.getElementById('matchingCoilsContainer');
     if (!container) return;
 
-    const visibleOrders = getVisibleSheetOrders();
-
-    if (visibleOrders.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">ابتدا قطعات را به لیست ابعاد برش اضافه کنید یا فیلتر را تغییر دهید.</p>';
+    // اگر هیچ ردیفی از لیست ابعاد انتخاب نشده، یک پیام راهنما نشان بده
+    if (!selectedSheetOrderId) {
+        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin-top: 20px;">برای مشاهده کویل‌های منطبق، روی یک ردیف در جدول ابعاد برش کلیک کنید.</p>';
         return;
     }
 
-    const requiredSpecs = new Map();
-    // Use the *visible* and *sorted* orders to determine the display order
-    visibleOrders.forEach(order => {
-        const key = `${order.type}-${order.feature}-${order.thickness}`;
-        if (!requiredSpecs.has(key)) {
-            requiredSpecs.set(key, { type: order.type, feature: order.feature, thickness: order.thickness });
-        }
-    });
-    
-    let html = '';
-    let foundAnyCoils = false;
-
-    // Iterate through the map to maintain the order derived from the visible list
-    requiredSpecs.forEach(spec => {
-        const matching = coils.filter(c =>
-            c.type === spec.type &&
-            c.feature === spec.feature &&
-            c.thickness === spec.thickness
-        );
-
-        if (matching.length > 0) {
-            foundAnyCoils = true;
-            matching.sort((a, b) => a.width - b.width);
-            
-            html += `<div style="margin-bottom: 12px;">`;
-            html += `<strong style="font-size: 1em; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 4px; display: block;">ورق: ${spec.type} / ${spec.feature} / ${spec.thickness}mm</strong>`;
-            
-            matching.forEach(coil => {
-                const displayCode = (coil.companyCode && coil.companyCode.length === 8) 
-                    ? `${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}` 
-                    : coil.companyCode;
-                html += `
-                    <div class="matching-coil-card">
-                        <p><strong>کد انبار:</strong> <span dir="ltr">${displayCode}</span></p>
-                        <p><strong>عرض:</strong> ${coil.width} mm | <strong>وزن:</strong> ${coil.weight} kg</p>
-                    </div>`;
-            });
-            
-            html += `</div>`;
-        }
-    });
-
-    if (!foundAnyCoils) {
-        container.innerHTML = '<p style="text-align: center; color: #dc3545; margin-top: 20px;">هیچ کویل منطبقی برای قطعات موجود در لیست یافت نشد.</p>';
-    } else {
-        container.innerHTML = html;
+    // مشخصات ردیف انتخاب شده را پیدا کن
+    const selectedOrder = sheetOrders.find(s => s.id === selectedSheetOrderId);
+    if (!selectedOrder) {
+        container.innerHTML = '<p style="text-align: center; color: #dc3545;">خطا: ردیف انتخاب شده یافت نشد.</p>';
+        return;
     }
-}
 
+    // کویل‌هایی که با مشخصات ردیف انتخاب شده مطابقت دارند را فیلتر کن
+    const matchingCoils = coils.filter(c =>
+        c.type === selectedOrder.type &&
+        c.feature === selectedOrder.feature &&
+        c.thickness === selectedOrder.thickness
+    );
+    
+    // کویل‌های یافت شده را بر اساس عرض مرتب کن
+    matchingCoils.sort((a, b) => a.width - b.width);
+
+    let tableHTML;
+    if (matchingCoils.length === 0) {
+        tableHTML = '<p style="text-align: center; color: #dc3545; margin-top: 20px; font-weight: bold;">هیچ کویل منطبقی برای این قطعه یافت نشد!</p>';
+    } else {
+        const tableRows = matchingCoils.map(coil => {
+            const displayCode = (coil.companyCode && coil.companyCode.length === 8) 
+                ? `${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}` 
+                : coil.companyCode;
+            return `
+                <tr>
+                    <td><span dir="ltr">${displayCode}</span></td>
+                    <td>${coil.type} / ${coil.feature}</td>
+                    <td>${coil.thickness}</td>
+                    <td>${coil.width}</td>
+                    <td>${coil.weight}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // ساختار کامل جدول
+        tableHTML = `
+            <div class="table-scroll-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>کد انبار</th>
+                            <th>نوع/ویژگی</th>
+                            <th>ضخامت</th>
+                            <th>عرض کویل</th>
+                            <th>وزن (ک.گ)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    container.innerHTML =tableHTML;
+}
 
 function renderSheetOrderList() {
     const container = document.getElementById('sheetOrderList');
@@ -3858,19 +3851,21 @@ function renderSheetOrderList() {
     if (displayOrders.length === 0) {
         tableHTML = '<div class="table-scroll-wrapper"><p style="text-align: center; padding: 20px;">هیچ ابعاد برشی با این مشخصات یافت نشد.</p></div>';
     } else {
-        const tableRows = displayOrders.map(order => `<tr>
-            <td>${order.companyCode}</td>
-            <td>${order.type}</td>
-            <td>${order.feature || '-'}</td>
-            <td>${order.thickness}</td>
-            <td>${order.length}×${order.width}</td>
-            <td>${order.calculatedWeight.toFixed(2)}</td>
-            <td class="operations-cell">
-                <button class="btn btn-warning" data-action="edit" data-id="${order.id}">ویرایش</button>
-                <button class="btn btn-danger" data-action="delete" data-id="${order.id}">حذف</button>
-            </td>
-        </tr>`).join('');
-        
+		 const tableRows = displayOrders.map(order => {
+			const isActive = order.id === selectedSheetOrderId; // بررسی اینکه آیا این ردیف فعال است یا نه
+			return `<tr data-id="${order.id}" class="${isActive ? 'active-sheet-order' : ''}">
+				<td>${order.companyCode}</td>
+				<td>${order.type}</td>
+				<td>${order.feature || '-'}</td>
+				<td>${order.thickness}</td>
+				<td>${order.length}×${order.width}</td>
+				<td>${order.calculatedWeight.toFixed(2)}</td>
+				<td class="operations-cell">
+					<button class="btn btn-warning" data-action="edit" data-id="${order.id}">ویرایش</button>
+					<button class="btn btn-danger" data-action="delete" data-id="${order.id}">حذف</button>
+				</td>
+			</tr>`;
+		}).join('');        
         tableHTML = `
             <div class="table-scroll-wrapper">
                 <table>
@@ -3892,59 +3887,6 @@ function renderSheetOrderList() {
     container.innerHTML = controlsHTML + tableHTML;
     handlePriorityChange();
     renderMatchingCoilsListForOrderList();
-}
-
-
-function renderPartNameFilter() {
-    const container = document.getElementById('partNameFilterContainer');
-    if (!container) return;
-
-    // ۱. دریافت مقادیر انتخاب شده از فرم
-    const selectedType = document.getElementById('sheetType').value;
-    const selectedFeature = document.getElementById('sheetFeature').value;
-    const selectedThickness = document.getElementById('sheetThickness').value;
-
-    // اگر اطلاعات پایه انتخاب نشده باشند، فیلتر را خالی نشان بده
-    if (!selectedType || !selectedFeature || !selectedThickness) {
-        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">ابتدا نوع، ویژگی و ضخامت ورق را انتخاب کنید.</p>';
-        return;
-    }
-
-    // ۲. پیدا کردن نام قطعات مرتبط
-    // ابتدا یک نقشه (Map) برای جستجوی سریع نام قطعه از روی کد آن می‌سازیم
-    const partCodeToNameMap = new Map();
-    const allBomParts = getUniquePartsFromBOM();
-    allBomParts.forEach(part => {
-        partCodeToNameMap.set(part.code, part.name);
-    });
-
-    // حالا لیست ابعاد برش را بر اساس فیلترها محدود می‌کنیم
-    const relevantOrders = sheetOrders.filter(order =>
-        order.type === selectedType &&
-        order.feature === selectedFeature &&
-        order.thickness == selectedThickness // استفاده از == برای مقایسه رشته و عدد
-    );
-
-    // نام‌ها را استخراج و منحصر به فرد می‌کنیم
-    const uniquePartNames = new Set(
-        relevantOrders
-            .map(order => partCodeToNameMap.get(order.companyCode)) // نام را از روی کد پیدا کن
-            .filter(name => name) // موارد بدون نام را حذف کن
-    );
-
-    // ۳. ساخت HTML برای چک‌باکس‌ها
-    const sortedNames = Array.from(uniquePartNames).sort((a, b) => a.localeCompare(b, 'fa'));
-
-    if (sortedNames.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">قطعه‌ای با این مشخصات یافت نشد.</p>';
-    } else {
-        container.innerHTML = sortedNames.map(name => `
-            <div class="filter-option">
-                <input type="checkbox" id="part-filter-${name.replace(/\s/g, '-')}" value="${name}" class="part-name-filter-cb" checked>
-                <label for="part-filter-${name.replace(/\s/g, '-')}">${name}</label>
-            </div>
-        `).join('');
-    }
 }
 
 // --- EVENT DELEGATION HANDLERS ---
@@ -4009,12 +3951,32 @@ function handleCoilListActions(event) {
 }
 
 function handleSheetOrderListActions(event) {
-    const target = event.target.closest('button');
-    if (!target) return;
-    const { action, id, sortKey } = target.dataset;
-    if (action === 'edit') editSheetOrder(id);
-    else if (action === 'delete') deleteSheetOrder(id);
-    else if (action === 'sort') handleTableSort(sheetOrdersListState, renderSheetOrderList, sortKey);
+    const button = event.target.closest('button');
+    // اگر روی یک دکمه کلیک شد (ویرایش، حذف، مرتب‌سازی)
+    if (button) {
+        const { action, id, sortKey } = button.dataset;
+        if (action === 'edit') editSheetOrder(id);
+        else if (action === 'delete') deleteSheetOrder(id);
+        else if (action === 'sort') handleTableSort(sheetOrdersListState, renderSheetOrderList, sortKey);
+        return; // پایان عملیات
+    }
+
+    // اگر روی دکمه کلیک نشده بود، بررسی کن آیا روی یک ردیف کلیک شده است
+    const row = event.target.closest('tr[data-id]');
+    if (row && row.dataset.id) {
+        const clickedId = row.dataset.id;
+        
+        // اگر روی همان ردیف فعال دوباره کلیک شد، آن را از حالت انتخاب خارج کن
+        if (selectedSheetOrderId === clickedId) {
+            selectedSheetOrderId = null;
+        } else {
+            selectedSheetOrderId = clickedId;
+        }
+
+        // لیست‌ها را برای نمایش تغییرات (هایلایت و لیست کویل‌ها) دوباره رندر کن
+        renderSheetOrderList();
+        renderMatchingCoilsListForOrderList();
+    }
 }
 
 function handleSettingsListActions(event) {
