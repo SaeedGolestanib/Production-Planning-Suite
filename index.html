@@ -2905,18 +2905,16 @@ async function processImportedSheets(data, replace) {
     let ignoredNoCoilCount = 0; 
     let ignoredDuplicateCount = 0;
     
+    // این بخش نیازی به نقشه نام ندارد و مستقل عمل می‌کند
     const processedCodes = new Set(replace ? [] : sheetOrders.map(s => s.companyCode));
     const processedSpecs = new Set(replace ? [] : sheetOrders.map(s => `${s.type}-${s.feature}-${s.thickness}-${s.length}-${s.width}`));
 
-    // --- جدید: یک بار در ابتدا نقشه کد به نام را می‌سازیم ---
-    const partCodeToNameMap = new Map();
-    getUniquePartsFromBOM().forEach(part => {
-        partCodeToNameMap.set(part.code, part.name);
-    });
-    // --------------------------------------------------------
-
     data.forEach((row, index) => {
         const rowIndex = index + 2;
+        
+        // ۱. نام قطعه را مستقیماً از اکسل می‌خوانیم
+        const partName = row['نام قطعه']?.trim();
+
         const newSheet = {
             id: 'S' + Date.now() + Math.random() + index,
             companyCode: row['کد قطعه']?.toString().trim(),
@@ -2924,13 +2922,16 @@ async function processImportedSheets(data, replace) {
             feature: row['ویژگی ورق']?.toString().trim(),
             length: parseFloat(row['طول قطعه']),
             width: parseFloat(row['عرض قطعه']),
-            thickness: parseFloat(row['ضخامت ورق'])
+            thickness: parseFloat(row['ضخامت ورق']),
+            name: partName // ۲. نام خوانده شده را مستقیماً به شیء اضافه می‌کنیم
         };
-        
-        // --- جدید: نام قطعه را به شیء اضافه می‌کنیم ---
-        newSheet.name = partCodeToNameMap.get(newSheet.companyCode) || `[کد ناشناخته: ${newSheet.companyCode}]`;
-        // -------------------------------------------------
 
+        // ۳. یک اعتبارسنجی جدید برای وجود نام اضافه می‌کنیم
+        if (!newSheet.name) {
+            fatalErrors.push(`ردیف ${rowIndex}: ستون "نام قطعه" خالی است یا وجود ندارد. این ستون الزامی است.`);
+            return; // از ادامه پردازش این ردیف جلوگیری می‌کنیم
+        }
+        
         const validationResult = validateSheetOrderFromImport(newSheet, rowIndex);
         if (validationResult.type === 'fatal') { 
             fatalErrors.push(validationResult.message); 
@@ -2952,6 +2953,7 @@ async function processImportedSheets(data, replace) {
         validatedSheets.push(newSheet);
     });
 
+    // بقیه تابع بدون تغییر باقی می‌ماند...
     if (fatalErrors.length > 0) { 
         showAlert(`ورود لغو شد. خطاهای زیر را برطرف کنید:\n\n` + fatalErrors.join('\n')); 
         return; 
@@ -2981,7 +2983,6 @@ async function processImportedSheets(data, replace) {
 		const selectedDimensions = getSelectedFilterValues('dimensions');
 		const selectedPartNames = getSelectedFilterValues('partNames');
 
-        // --- حالا فیلتر کردن نهایی بسیار ساده‌تر است ---
 		const finalSheetsToImport = tempImportData.filter(sheet => {
 			return (selectedTypes.length === 0 || selectedTypes.includes(sheet.type)) &&
 				   (selectedFeatures.length === 0 || selectedFeatures.includes(sheet.feature)) &&
@@ -2989,7 +2990,6 @@ async function processImportedSheets(data, replace) {
 				   (selectedDimensions.length === 0 || selectedDimensions.includes(`${sheet.length}×${sheet.width}`)) &&
 				   (selectedPartNames.length === 0 || selectedPartNames.includes(sheet.name));
 		});
-        // ----------------------------------------------------
 
 		document.getElementById('importFilterModal').style.display = 'none';
 		tempImportData = [];
@@ -3000,10 +3000,8 @@ async function processImportedSheets(data, replace) {
             applyBtn.removeEventListener('click', applyFilterHandler);
 			return;
 		}
-
-        // --- مهم: هنگام افزودن به لیست اصلی، فیلد نام را حذف می‌کنیم تا ساختار داده اصلی تغییر نکند ---
+		
         const sheetsToAdd = finalSheetsToImport.map(({ name, ...rest }) => rest);
-        // -----------------------------------------------------------------------------------------
 		
         if (replace) sheetOrders = sheetsToAdd;
 		else sheetOrders.push(...sheetsToAdd);
@@ -3018,7 +3016,6 @@ async function processImportedSheets(data, replace) {
     applyBtn.replaceWith(applyBtn.cloneNode(true));
     document.getElementById('applyImportFilterBtn').addEventListener('click', applyFilterHandler);
 }
-
 function processImportedWip(data) {
     if (!data || data.length === 0) {
         showAlert('فایل اکسل خالی است یا داده‌ای برای ورود ندارد.');
@@ -6347,4 +6344,3 @@ function updateAnalysisDimensionFilter() { // Renamed from updateAnalysisPartNam
 </script>
 </body>
 </html>
-
