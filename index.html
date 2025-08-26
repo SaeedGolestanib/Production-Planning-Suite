@@ -1687,7 +1687,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.7.5
+// SCRIPT VERSION: 6.7.6
 // Author: Saeed Golestani
 // Date: 2024-09-07
 // Changes:
@@ -1699,12 +1699,12 @@
 //    saved as `undefined`. Ensured the correct value is always read from the form.
 // 3. (REFACTOR) Streamlined the interaction between the shortage calculation
 //    and the display filters for better reliability.
-// 4. (VERSION) Version updated to 6.7.5.
+// 4. (VERSION) Version updated to 6.7.6.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.7.5';
+const APP_VERSION = '6.7.6';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -3867,24 +3867,23 @@ function exportToXLSX(type) {
         });
         filename = "bom-export.xlsx";
     } else if (type === 'wip') {
-        const allSystemPartCombinations = getAllPartProductCombinations();
-        if (allSystemPartCombinations.length === 0) {
+        // START OF CHANGE: Simplified the export format as requested.
+        // 1. Get a list of unique parts defined in the entire system (BOM).
+        const allSystemParts = getUniquePartsFromBOM();
+        
+        if (allSystemParts.length === 0) {
             showAlert('هیچ قطعه‌ای در BOM تعریف نشده است تا بتوان لیست موجودی پای کار را خروجی گرفت.');
             return;
         }
         
-        // مرتب‌سازی داده‌ها برای خوانایی بهتر در اکسل
-        allSystemPartCombinations.sort((a, b) => {
-            const productCompare = `${a.product.type}-${a.product.model}`.localeCompare(`${b.product.type}-${b.product.model}`, 'fa');
-            if (productCompare !== 0) return productCompare;
-            return a.part.name.localeCompare(b.part.name, 'fa');
-        });
+        // 2. Sort the parts for a more organized Excel file (e.g., by name).
+        allSystemParts.sort((a, b) => a.name.localeCompare(b.name, 'fa'));
 
-        data = allSystemPartCombinations.map(combo => ({
-            'نام محصول': `${combo.product.type} - مدل ${combo.product.model}`,
-            'نام قطعه': combo.part.name,
-            'کد قطعه': combo.part.code,
-            'تعداد قطعه': wipData[combo.part.code] || 0
+        // 3. Create the data array with only the three required columns.
+        data = allSystemParts.map(part => ({
+            'نام قطعه': part.name,
+            'کد قطعه': part.code,
+            'تعداد قطعه': wipData[part.code] || 0 // Get quantity from wipData, default to 0.
         }));
         filename = "wip-export.xlsx";
     }
@@ -7593,78 +7592,97 @@ function buildWipPage() {
         }
     });
 }
+
 function renderWipList() {
     const container = document.getElementById('wipListContainer');
     if (!container) return;
 
-    // 1. دریافت لیست ترکیبی محصول-قطعه با استفاده از تابع جدید
-    const allPartCombinations = getAllPartProductCombinations();
+    const uniqueParts = getUniquePartsFromBOM();
 
-    // 2. غنی‌سازی داده‌ها با اطلاعات WIP برای فیلتر و مرتب‌سازی
-    allPartCombinations.forEach(combo => {
-        combo.wipQuantity = wipData[combo.part.code] || 0;
-        // ساخت یک فیلد ترکیبی برای مرتب‌سازی نام محصول
-        combo.productFullName = `${combo.product.type} - مدل ${combo.product.model}`;
+    // 1. ساختار داده نمایش را با منطق گروه‌بندی جدید ایجاد می‌کنیم
+    let displayData = uniqueParts.map(part => {
+        const involvedProducts = products.filter(prod => 
+            prod.parts.some(p => p.code === part.code)
+        );
+        
+        // --- START: منطق جدید برای گروه‌بندی مدل‌ها ---
+        const productGroups = {}; // آبجکتی برای نگهداری گروه‌ها، مثال: { 'لباسشویی': ['7412', '5407'] }
+
+        involvedProducts.forEach(p => {
+            if (!productGroups[p.type]) {
+                productGroups[p.type] = []; // اگر نوع محصول برای اولین بار دیده می‌شود، یک آرایه برای آن بساز
+            }
+            productGroups[p.type].push(p.model); // مدل را به آرایه مربوط به نوع محصول اضافه کن
+        });
+
+        const formattedParts = [];
+        for (const type in productGroups) {
+            // مدل‌ها را مرتب می‌کنیم تا خروجی همیشه یکسان و خوانا باشد
+            const sortedModels = productGroups[type].sort((a, b) => {
+                // مرتب‌سازی عددی هوشمند
+                return isNaN(a) || isNaN(b) ? a.localeCompare(b, 'fa') : a - b;
+            });
+            // نوع محصول و مدل‌های ترکیب شده با '/' را به هم متصل می‌کنیم
+            formattedParts.push(`${type} ${sortedModels.join(' / ')}`);
+        }
+        const involvedProductsString = formattedParts.join('، '); // گروه‌ها را با کاما از هم جدا می‌کنیم
+        // --- END: منطق جدید ---
+
+        return {
+            part: part,
+            involvedProductsString: involvedProductsString,
+            wipQuantity: wipData[part.code] || 0
+        };
     });
 
-    // 3. فیلتر کردن داده‌ها بر اساس جستجو
-    // START OF CHANGE: کلیدهای جستجو برای شامل شدن نام محصول به‌روز شد
-    const searchableKeys = ['productFullName', 'part.name', 'part.code', 'part.sheetType', 'part.sheetFeature', 'part.thickness', 'part.length', 'part.width', 'wipQuantity'];
-    // END OF CHANGE
-    let displayParts = filterData(allPartCombinations, wipListState.searchTerm, searchableKeys);
+    // بخش‌های فیلتر، مرتب‌سازی و ساخت جدول بدون تغییر باقی می‌مانند...
+    const searchableKeys = ['part.name', 'part.code', 'involvedProductsString', 'part.sheetType', 'part.sheetFeature', 'part.thickness'];
+    displayData = filterData(displayData, wipListState.searchTerm, searchableKeys);
+    sortData(displayData, wipListState.sortKey, wipListState.sortDir);
 
-    // 4. مرتب‌سازی داده‌ها
-    sortData(displayParts, wipListState.sortKey, wipListState.sortDir);
-
-    // 5. ساخت HTML دکمه‌های کنترل
-    // START OF CHANGE: دکمه مرتب‌سازی جدید برای "نام محصول" اضافه شد
+    const s = wipListState;
+    const getArrow = (key) => s.sortKey === key ? (s.sortDir === 'asc' ? '↑' : '↓') : '';
     const controlsHTML = `
         <div class="table-controls" data-list-id="wipListContainer">
-            <input type="text" class="search-input" placeholder="جستجو در قطعات و محصولات..." value="${wipListState.searchTerm}">
+            <input type="text" class="search-input" placeholder="جستجو در قطعات و محصولات..." value="${s.searchTerm}">
             <div class="sort-buttons">
                 <span>مرتب‌سازی:</span>
-                <button class="btn btn-secondary sort-btn ${wipListState.sortKey === 'productFullName' ? 'active' : ''}" data-action="sort" data-sort-key="productFullName">نام محصول ${wipListState.sortKey === 'productFullName' ? (wipListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${wipListState.sortKey === 'part.name' ? 'active' : ''}" data-action="sort" data-sort-key="part.name">نام قطعه ${wipListState.sortKey === 'part.name' ? (wipListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${wipListState.sortKey === 'part.code' ? 'active' : ''}" data-action="sort" data-sort-key="part.code">کد قطعه ${wipListState.sortKey === 'part.code' ? (wipListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${wipListState.sortKey === 'part.sheetType' ? 'active' : ''}" data-action="sort" data-sort-key="part.sheetType">نوع ورق ${wipListState.sortKey === 'part.sheetType' ? (wipListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${wipListState.sortKey === 'part.thickness' ? 'active' : ''}" data-action="sort" data-sort-key="part.thickness">ضخامت ${wipListState.sortKey === 'part.thickness' ? (wipListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
-                <button class="btn btn-secondary sort-btn ${wipListState.sortKey === 'wipQuantity' ? 'active' : ''}" data-action="sort" data-sort-key="wipQuantity">موجودی ${wipListState.sortKey === 'wipQuantity' ? (wipListState.sortDir === 'asc' ? '↑' : '↓') : ''}</button>
+                <button class="btn btn-secondary sort-btn ${s.sortKey === 'part.code' ? 'active' : ''}" data-action="sort" data-sort-key="part.code">کد قطعه ${getArrow('part.code')}</button>
+                <button class="btn btn-secondary sort-btn ${s.sortKey === 'part.name' ? 'active' : ''}" data-action="sort" data-sort-key="part.name">نام قطعه ${getArrow('part.name')}</button>
+                <button class="btn btn-secondary sort-btn ${s.sortKey === 'involvedProductsString' ? 'active' : ''}" data-action="sort" data-sort-key="involvedProductsString">محصولات درگیر ${getArrow('involvedProductsString')}</button>
+                <button class="btn btn-secondary sort-btn ${s.sortKey === 'part.sheetType' ? 'active' : ''}" data-action="sort" data-sort-key="part.sheetType">نوع ورق ${getArrow('part.sheetType')}</button>
+                <button class="btn btn-secondary sort-btn ${s.sortKey === 'wipQuantity' ? 'active' : ''}" data-action="sort" data-sort-key="wipQuantity">موجودی ${getArrow('wipQuantity')}</button>
             </div>
         </div>`;
-    // END OF CHANGE
 
     let tableHTML;
-    if (allPartCombinations.length === 0) {
-        tableHTML = '<p style="text-align:center; padding: 20px;">هنوز هیچ قطعه‌ای در BOM تعریف نشده است. ابتدا از بخش برنامه‌ریزی تولید، محصولات و قطعات آن‌ها را تعریف کنید.</p>';
-    } else if (displayParts.length === 0) {
-        tableHTML = '<div class="table-scroll-wrapper"><p style="text-align:center; padding: 20px;">هیچ موردی با این مشخصات یافت نشد.</p></div>';
+    if (uniqueParts.length === 0) {
+        tableHTML = '<div class="empty-state"><h3>هنوز هیچ قطعه‌ای در BOM تعریف نشده است</h3><p>ابتدا از بخش برنامه‌ریزی تولید، محصولات و قطعات آن‌ها را تعریف کنید.</p></div>';
+    } else if (displayData.length === 0) {
+        tableHTML = `<div class="empty-state"><h3>نتیجه‌ای یافت نشد</h3><p>هیچ موردی با عبارت جستجوی "${wipListState.searchTerm}" مطابقت ندارد.</p></div>`;
     } else {
-        // START OF CHANGE: ردیف‌های جدول برای نمایش ستون جدید "نام محصول" به‌روز شد
-        const tableRows = displayParts.map(combo => {
-            const part = combo.part;
-            const product = combo.product;
+        const tableRows = displayData.map(item => {
+            const part = item.part;
             return `
             <tr>
-                <td>${product.type} - مدل ${product.model}</td>
-                <td>${part.name}</td>
                 <td>${part.code}</td>
+                <td>${part.name}</td>
+                <td style="white-space: normal; min-width: 250px;">${item.involvedProductsString}</td>
                 <td>${part.sheetType} / ${part.sheetFeature}</td>
                 <td>${part.thickness}</td>
                 <td>${part.length}×${part.width}</td>
-                <td><input type="number" class="wip-quantity" data-part-code="${part.code}" value="${combo.wipQuantity}" min="0" oninput="if(this.value < 0) this.value = 0;" style="width: 120px; text-align: center; padding: 6px;"></td>
+                <td><input type="number" class="wip-quantity" data-part-code="${part.code}" value="${item.wipQuantity}" min="0" oninput="if(this.value < 0) this.value = 0;" style="width: 120px; text-align: center; padding: 6px;"></td>
             </tr>
         `}).join('');
-        // END OF CHANGE
 
-        // START OF CHANGE: هدر جدول برای نمایش ستون جدید "نام محصول" به‌روز شد
         tableHTML = `
             <div class="table-scroll-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>نام محصول</th>
-                            <th>نام قطعه</th>
                             <th>کد قطعه</th>
+                            <th>نام قطعه</th>
+                            <th>محصولات درگیر</th>
                             <th>نوع/ویژگی ورق</th>
                             <th>ضخامت (م.م)</th>
                             <th>ابعاد (م.م)</th>
@@ -7674,7 +7692,6 @@ function renderWipList() {
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>`;
-        // END OF CHANGE
     }
     
     container.innerHTML = controlsHTML + tableHTML;
@@ -8928,6 +8945,7 @@ function recalculateShortageIfVisible() {
     }
 }
 
+// No logical changes here, just showing how it uses the updated formatProductNames helper.
 function showShortageDetails() {
     if (fullShortageReportData.length === 0) {
         showAlert("ابتدا باید گزارش کسری را محاسبه کنید تا جزئیات آن قابل نمایش باشد.");
@@ -8937,24 +8955,20 @@ function showShortageDetails() {
     const selectedBatch = productionBatches.find(b => b.id === selectedBatchId);
     if (!selectedBatch) return;
 
-    // --- START OF MODIFICATION ---
     const summaryContainer = document.getElementById('productionPlanSummaryContainer');
     const productionPlan = selectedBatch.plan;
     
-    // 1. Create an array to hold the formatted strings
     const summaryParts = [];
     Object.entries(productionPlan).forEach(([productId, quantity]) => {
         if (quantity > 0) {
             const product = products.find(p => p.id === productId);
             if (product) {
-                // 2. Create the desired string format and push it to the array
                 summaryParts.push(`${product.type} ${product.model}: <strong>${quantity.toLocaleString()} دستگاه</strong>`);
             }
         }
     });
 
     if (summaryParts.length > 0) {
-        // 3. Join the array with ' / ' and wrap it in a single <p> tag
         summaryContainer.innerHTML = `
             <h4>خلاصه برنامه تولید این سفارش:</h4>
             <p style="font-size: 0.95em; line-height: 1.6;">${summaryParts.join(' / ')}</p>
@@ -8963,7 +8977,6 @@ function showShortageDetails() {
     } else {
         summaryContainer.style.display = 'none';
     }
-    // --- END OF MODIFICATION ---
 
     shortageDetailsListState = { searchTerm: '', sortKey: 'groupData.shortage', sortDir: 'desc' };
     
@@ -8992,7 +9005,8 @@ function showShortageDetails() {
 
     shortageDetailsRawData = Array.from(aggregatedParts.values()).map(agg => ({
         part: agg.part, totalGrossRequired: agg.totalGrossRequired,
-        productName: formatProductNames(agg.involvedProducts), wipCount: agg.wipCount,
+        productName: formatProductNames(agg.involvedProducts), // <--- This line now produces the better format
+        wipCount: agg.wipCount,
         partWeightGram: agg.partWeightGram, wipWeight_kg: agg.wipWeight_kg
     }));
 
@@ -9291,6 +9305,7 @@ function exportShortageDetailsToXLSX() {
     const filename = `جزئیات_کسری_سفارش_${batchName}.xlsx`;
     XLSX.writeFile(wb, filename);
 }
+// START OF CHANGE: Updated helper function to group product models by type.
 function formatProductNames(productStrings) {
     if (!productStrings || productStrings.length === 0) {
         return '';
@@ -9299,11 +9314,12 @@ function formatProductNames(productStrings) {
     const productGroups = {};
 
     productStrings.forEach(str => {
-        const parts = str.split('-');
-        if (parts.length < 2) return; // Ignore malformed strings
+        // این روش برای مدل‌هایی که ممکن است خودشان '-' داشته باشند، ایمن‌تر است
+        const separatorIndex = str.indexOf('-');
+        if (separatorIndex === -1) return; // از رشته‌های نامعتبر رد شو
 
-        const type = parts[0];
-        const model = parts.slice(1).join('-'); // Handle models that might contain hyphens
+        const type = str.substring(0, separatorIndex);
+        const model = str.substring(separatorIndex + 1);
 
         if (!productGroups[type]) {
             productGroups[type] = [];
@@ -9313,7 +9329,7 @@ function formatProductNames(productStrings) {
 
     const formattedParts = [];
     for (const type in productGroups) {
-        // Sort models numerically or alphabetically before joining
+        // مرتب‌سازی مدل‌ها برای خروجی یکسان و خوانا
         const sortedModels = productGroups[type].sort((a, b) => {
             return isNaN(a) || isNaN(b) ? a.localeCompare(b, 'fa') : a - b;
         });
@@ -9322,6 +9338,7 @@ function formatProductNames(productStrings) {
 
     return formattedParts.join('، ');
 }
+// END OF CHANGE
 /**
  * A dedicated function to handle switching to the sheets page and ensuring all UI elements are correctly rendered.
  */
