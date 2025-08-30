@@ -1687,7 +1687,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.7.6
+// SCRIPT VERSION: 6.7.8
 // Author: Saeed Golestani
 // Date: 2024-09-07
 // Changes:
@@ -1699,12 +1699,12 @@
 //    saved as `undefined`. Ensured the correct value is always read from the form.
 // 3. (REFACTOR) Streamlined the interaction between the shortage calculation
 //    and the display filters for better reliability.
-// 4. (VERSION) Version updated to 6.7.6.
+// 4. (VERSION) Version updated to 6.7.8.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.7.6';
+const APP_VERSION = '6.7.8';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -2777,6 +2777,9 @@ function bindEventListeners() {
     document.getElementById('poCoilThickness').addEventListener('change', updatePoWidthDropdown); // <-- Listener جدید
     document.getElementById('purchaseOrderSubmitBtn').addEventListener('click', savePurchaseOrder);
     document.getElementById('purchaseOrderCancelBtn').addEventListener('click', cancelPurchaseOrderEdit);
+	document.getElementById('btnImportPurchaseOrders').addEventListener('click', () => importFromXLSX('purchaseOrders'));
+	document.getElementById('btnExportPurchaseOrders').addEventListener('click', () => exportToXLSX('purchaseOrders'));
+	
     // --- END OF CHANGE ---
 
     // Settings Page
@@ -3886,8 +3889,23 @@ function exportToXLSX(type) {
             'تعداد قطعه': wipData[part.code] || 0 // Get quantity from wipData, default to 0.
         }));
         filename = "wip-export.xlsx";
-    }
-
+	} else if (type === 'purchaseOrders') {
+		data = purchaseOrders.map(po => {
+        const [gy, gm, gd] = po.deliveryDate.split('-').map(Number);
+        const jalaliDate = gregorianToJalali(gy, gm, gd);
+        const formattedJalaliDate = `${jalaliDate.jy}/${String(jalaliDate.jm).padStart(2, '0')}/${String(jalaliDate.jd).padStart(2, '0')}`;
+        return {
+            'شماره سفارش': po.poNumber,
+            'نوع ورق': po.type,
+            'ویژگی ورق': po.feature,
+            'ضخامت': po.thickness,
+            'عرض': po.width,
+            'وزن': po.weight,
+            'تاریخ تحویل': formattedJalaliDate // تاریخ شمسی
+        };
+    });
+    filename = "purchase-orders-export.xlsx";
+}
     if(data && data.length > 0) {
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
@@ -3928,7 +3946,10 @@ function importFromXLSX(type) {
                 } else if (type === 'analysis') {
                     await processImportedAnalysisParts(json);
                 }
-
+				else if (type === 'purchaseOrders') {
+					// ایجاد تابع جدید
+					await processImportedPurchaseOrders(json);
+				}
             } catch (error) {
                 console.error("Error processing XLSX file:", error);
                 showAlert("خطا در پردازش فایل اکسل. لطفاً ساختار فایل را بررسی کنید.");
@@ -3939,6 +3960,115 @@ function importFromXLSX(type) {
     input.click();
 }
 
+async function processImportedPurchaseOrders(data) {
+    const importedPOs = [];
+    const errors = [];
+    
+    // یک پیغام هشدار به کاربر نمایش داده می‌شود
+    const userConfirmed = await showConfirmationModal(
+        `با ورود اطلاعات از فایل اکسل، تمام ${purchaseOrders.length} سفارش خرید فعلی حذف خواهد شد و با داده‌های جدید جایگزین می‌شود.\n\nآیا مطمئن هستید؟`
+    );
+
+    if (!userConfirmed) {
+        showToast('عملیات ورود اطلاعات لغو شد.', 'info');
+        return; // اگر کاربر عملیات را لغو کرد، از تابع خارج می‌شود
+    }
+    
+    // اعتبارسنجی برای تاریخ‌های تکراری با مشخصات یکسان
+    const uniqueOrdersInFile = new Set();
+    
+    // یک مپ از تمام مشخصات کویل‌های موجود در انبار ایجاد می‌کنیم تا جستجو سریع باشد
+    const availableCoilSpecs = new Set(coils.map(c => `${c.type}-${c.feature}-${c.thickness}-${c.width}`));
+    
+    // یک مپ از قوانین پیش‌کد انبار برای اعتبارسنجی ترکیب نوع و ویژگی
+    const validTypeFeatures = new Set(Object.keys(settings.companyCodePrefixes));
+
+    data.forEach((row, index) => {
+        const rowIndex = index + 2;
+        const poNumber = row['شماره سفارش']?.toString().trim();
+        const type = row['نوع ورق']?.trim();
+        const feature = row['ویژگی ورق']?.trim();
+        const thickness = parseFloat(row['ضخامت']);
+        const width = parseFloat(row['عرض']);
+        const weight = parseFloat(row['وزن']);
+        const deliveryDateShamsi = row['تاریخ تحویل']?.toString().trim();
+
+        // 1. اعتبارسنجی داده‌های ناقص
+        if (!poNumber || !type || !feature || isNaN(thickness) || isNaN(width) || isNaN(weight) || !deliveryDateShamsi) {
+            errors.push(`ردیف ${rowIndex}: داده‌های ناقص یا نامعتبر.`);
+            return;
+        }
+
+        // 2. اعتبارسنجی وزن
+        if (weight <= 0) {
+            errors.push(`ردیف ${rowIndex}: وزن کویل باید بزرگتر از صفر باشد.`);
+            return;
+        }
+        
+        // 3. اعتبارسنجی تاریخ شمسی
+        const dateParts = deliveryDateShamsi.split('/');
+        if (dateParts.length !== 3) {
+            errors.push(`ردیف ${rowIndex}: فرمت تاریخ تحویل نامعتبر است (باید yyyy/mm/dd باشد).`);
+            return;
+        }
+        const [jy, jm, jd] = dateParts.map(Number);
+        
+        // تبدیل تاریخ شمسی به میلادی برای مقایسه با تاریخ امروز
+        const { gy, gm, gd } = jalaliToGregorian(jy, jm, jd);
+        const deliveryDateMiladi = `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(deliveryDateMiladi);
+        if (selectedDate.getTime() < today.getTime()) {
+            errors.push(`ردیف ${rowIndex}: تاریخ تحویل (${deliveryDateShamsi}) نمی‌تواند قبل از تاریخ امروز باشد.`);
+            return;
+        }
+
+        // 4. اعتبارسنجی نوع و ویژگی ورق
+        const typeFeatureKey = `${type}-${feature}`;
+        if (!validTypeFeatures.has(typeFeatureKey)) {
+            errors.push(`ردیف ${rowIndex}: ترکیب نوع ورق (${type}) و ویژگی (${feature}) در تنظیمات تعریف نشده است.`);
+            return;
+        }
+        
+        // 5. اعتبارسنجی ضخامت و عرض کویل
+        const fullSpecKey = `${type}-${feature}-${thickness}-${width}`;
+        if (!availableCoilSpecs.has(fullSpecKey)) {
+            errors.push(`ردیف ${rowIndex}: کویلی با مشخصات (نوع: ${type}، ویژگی: ${feature}، ضخامت: ${thickness}، عرض: ${width}) در انبار وجود ندارد.`);
+            return;
+        }
+        
+        // 6. اعتبارسنجی تکراری بودن در تاریخ یکسان
+        const uniqueOrderSignature = `${deliveryDateMiladi}-${type}-${feature}-${thickness}-${width}`;
+        if (uniqueOrdersInFile.has(uniqueOrderSignature)) {
+            errors.push(`ردیف ${rowIndex}: یک سفارش خرید با مشخصات (نوع، ویژگی، ضخامت و عرض) یکسان در تاریخ تحویل مشابه از قبل در این فایل ثبت شده است.`);
+            return;
+        }
+        uniqueOrdersInFile.add(uniqueOrderSignature);
+
+        // اگر تمامی اعتبارسنجی‌ها موفق بود، سفارش را به لیست اضافه کن
+        importedPOs.push({
+            id: 'PO' + Date.now() + index,
+            poNumber, type, feature, thickness, width, weight,
+            deliveryDate: deliveryDateMiladi
+        });
+    });
+
+    if (errors.length > 0) {
+        showAlert("ورود اطلاعات لغو شد. خطاهای زیر را برطرف کنید:\n\n" + errors.join("\n"));
+        return;
+    }
+
+    if (importedPOs.length > 0) {
+        // جایگزین کردن کل لیست با داده‌های جدید
+        purchaseOrders = importedPOs; 
+        saveDataToLocalStorage();
+        renderPurchaseOrderList();
+        showAlert(`تعداد ${importedPOs.length} سفارش خرید با موفقیت وارد شد.`);
+    } else {
+        showAlert("هیچ داده معتبری برای ورود در فایل یافت نشد.");
+    }
+}
 function handleRahkaranImport() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -4661,7 +4791,7 @@ async function processImportedSheets(data, replace) {
     applyBtn.replaceWith(applyBtn.cloneNode(true));
     document.getElementById('applyImportFilterBtn').addEventListener('click', applyFilterHandler);
 }
-function processImportedWip(data) {
+async function processImportedWip(data) {
     if (!data || data.length === 0) {
         showAlert('فایل اکسل خالی است یا داده‌ای برای ورود ندارد.');
         return;
@@ -4673,30 +4803,75 @@ function processImportedWip(data) {
         return;
     }
 
-    const importedWipMap = new Map();
-    const errors = [];
-    
-    data.forEach((row, index) => {
-        const partCode = row['کد قطعه']?.toString().trim();
-        const quantity = parseInt(row['تعداد قطعه']);
+    const allSystemPartCodes = new Set(allSystemParts.map(p => p.code));
 
+    const errors = [];
+    const warnings = [];
+    const importedWipMap = new Map();
+    const seenCodes = new Set();
+    const duplicateCodes = new Set();
+
+    data.forEach((row, index) => {
+        const rowIndex = index + 2;
+        const partCode = row['کد قطعه']?.toString().trim();
+        const quantityStr = row['تعداد قطعه'];
+        const quantity = parseInt(quantityStr);
+
+        // --- 1. بررسی کد قطعه ---
         if (!partCode) {
-            errors.push(`ردیف ${index + 2}: کد قطعه خالی است.`);
+            errors.push(`ردیف ${rowIndex}: کد قطعه خالی است.`);
             return;
         }
+
+        if (!/^\d{6,7}$/.test(partCode)) {
+            errors.push(`ردیف ${rowIndex}: کد قطعه "${partCode}" باید 6 یا 7 رقم عددی باشد.`);
+            return;
+        }
+
+        // --- 2. بررسی تعداد ---
         if (isNaN(quantity) || quantity < 0) {
-            errors.push(`ردیف ${index + 2}: تعداد قطعه برای کد ${partCode} نامعتبر است.`);
+            errors.push(`ردیف ${rowIndex}: تعداد برای کد "${partCode}" نامعتبر است.`);
             return;
         }
-        
-        importedWipMap.set(partCode, quantity);
+
+        // --- 3. بررسی وجود قطعه در سیستم (تغییر اینجا) ---
+        if (!allSystemPartCodes.has(partCode)) {
+            warnings.push(`ردیف ${rowIndex}: کد قطعه "${partCode}" در سیستم (BOM) یافت نشد و نادیده گرفته شد.`);
+            return; // فقط این ردیف رد می‌شود، نه کل فایل
+        }
+
+        // --- 4. بررسی تکرار ---
+        if (seenCodes.has(partCode)) {
+            duplicateCodes.add(partCode);
+        } else {
+            seenCodes.add(partCode);
+        }
+
+        // --- 5. اضافه کردن به مپ (با جمع تکراری‌ها) ---
+        if (importedWipMap.has(partCode)) {
+            importedWipMap.set(partCode, importedWipMap.get(partCode) + quantity);
+        } else {
+            importedWipMap.set(partCode, quantity);
+        }
     });
-    
+
+    // --- مرحله: نمایش خطاها (فقط خطاها، نه هشدارها) ---
     if (errors.length > 0) {
-        showAlert(`خطا در فایل ورودی:\n\n${errors.join('\n')}`);
-        return;
+        showAlert(`ورود لغو شد. لطفاً خطاها را اصلاح کنید:\n\n${errors.join('\n')}`);
+        return; // فقط در صورت خطا خارج می‌شویم
     }
 
+    // --- اگر تکرار داشتیم، کاربر رو بپرسیم ---
+    if (duplicateCodes.size > 0) {
+        const warningMessage = `کدهای زیر در فایل تکراری هستند و تعداد آنها جمع خواهد شد:\n${[...duplicateCodes].join(', ')}\n\nآیا مایلید ادامه دهید؟`;
+        const userConfirmed = await showConfirmationModal(warningMessage);
+        if (!userConfirmed) {
+            showAlert("عملیات ورود لغو شد.");
+            return;
+        }
+    }
+
+    // --- به‌روزرسانی داده‌ها ---
     let updatedCount = 0;
     const newWipData = {};
 
@@ -4709,18 +4884,22 @@ function processImportedWip(data) {
             updatedCount++;
         }
     });
-    
+
     wipData = newWipData;
     saveDataToLocalStorage();
     renderWipList();
-    
-    if (updatedCount > 0) {
-        showAlert(`عملیات با موفقیت انجام شد. موجودی برای تعداد ${updatedCount} کد قطعه که در فایل اکسل موجود بودند، به‌روزرسانی شد. موجودی سایر قطعات صفر در نظر گرفته شد.`);
-    } else {
-        showAlert('هیچ یک از کدهای قطعه در فایل اکسل با قطعات تعریف شده در سیستم مطابقت نداشت. تمام موجودی‌ها صفر شدند.');
-    }
-}
 
+    // --- نمایش پیام نهایی ---
+    let successMsg = `عملیات با موفقیت انجام شد.\nتعداد ${updatedCount} کد قطعه به‌روزرسانی شد.`;
+    if (warnings.length > 0) {
+        successMsg += `\n\n⚠️ هشدار: ${warnings.length} کد قطعه در سیستم وجود نداشتند و نادیده گرفته شدند.`;
+    }
+    if (duplicateCodes.size > 0) {
+        successMsg += `\n(تعداد قطعات تکراری در فایل با هم جمع شدند.)`;
+    }
+
+    showAlert(successMsg);
+}
 function setupSheetImportFilters() {
     currentImportType = 'sheets';
     const grid = document.getElementById('importFilterGrid');
@@ -9498,10 +9677,12 @@ function buildPurchaseOrdersPage() {
             <div class="list-section">
                 <div class="section-header">
                     <h2>لیست سفارشات خرید در راه</h2>
-                    <div class="io-buttons">
-                        <button id="btnPrintPurchaseOrders" class="btn btn-info">چاپ لیست</button>
-                        <button id="btnClearPurchaseOrders" class="btn btn-danger">پاک کردن همه</button>
-                    </div>
+					<div class="io-buttons">
+						<button id="btnImportPurchaseOrders" class="btn btn-primary">ورود از Excel</button>
+						<button id="btnExportPurchaseOrders" class="btn btn-success">خروجی به Excel</button>
+						<button id="btnPrintPurchaseOrders" class="btn btn-info">چاپ لیست</button>
+						<button id="btnClearPurchaseOrders" class="btn btn-danger">پاک کردن همه</button>
+					</div>
                 </div>
                 <div class="table-container" id="purchaseOrderList"></div>
             </div>
@@ -9757,7 +9938,9 @@ function renderPurchaseOrderList() {
                 <span>مرتب‌سازی:</span>
                 <button class="btn btn-secondary sort-btn ${s.sortKey === 'poNumber' ? 'active' : ''}" data-action="sort" data-sort-key="poNumber">شماره سفارش ${getArrow('poNumber')}</button>
                 <button class="btn btn-secondary sort-btn ${s.sortKey === 'type' ? 'active' : ''}" data-action="sort" data-sort-key="type">نوع ورق ${getArrow('type')}</button>
-                <button class="btn btn-secondary sort-btn ${s.sortKey === 'weight' ? 'active' : ''}" data-action="sort" data-sort-key="weight">وزن ${getArrow('weight')}</button>
+                <button class="btn btn-secondary sort-btn ${s.sortKey === 'thickness' ? 'active' : ''}" data-action="sort" data-sort-key="thickness">ضخامت ${getArrow('thickness')}</button>
+				<button class="btn btn-secondary sort-btn ${s.sortKey === 'width' ? 'active' : ''}" data-action="sort" data-sort-key="width">عرض ${getArrow('width')}</button>
+				<button class="btn btn-secondary sort-btn ${s.sortKey === 'weight' ? 'active' : ''}" data-action="sort" data-sort-key="weight">وزن ${getArrow('weight')}</button>
                 <button class="btn btn-secondary sort-btn ${s.sortKey === 'deliveryDate' ? 'active' : ''}" data-action="sort" data-sort-key="deliveryDate">تاریخ تحویل ${getArrow('deliveryDate')}</button>
             </div>
         </div>`;
@@ -10000,8 +10183,12 @@ function printPurchaseOrders() {
         return;
     }
 
-    // --- START OF CHANGE: Dynamically build a new table for printing ---
-    
+    // Sort the data based on the current on-screen sort order
+    let dataToPrint = [...purchaseOrders];
+    const searchableKeys = ['poNumber', 'type', 'feature', 'thickness', 'width', 'weight', 'deliveryDate'];
+    dataToPrint = filterData(dataToPrint, purchaseOrderListState.searchTerm, searchableKeys);
+    sortData(dataToPrint, purchaseOrderListState.sortKey, purchaseOrderListState.sortDir);
+
     // 1. Define the new headers for the print version
     const printHeaders = [
         'شماره سفارش',
@@ -10011,12 +10198,6 @@ function printPurchaseOrders() {
         'تاریخ تحویل'
     ];
     
-    // Sort the data based on the current on-screen sort order
-    let dataToPrint = [...purchaseOrders];
-    const searchableKeys = ['poNumber', 'type', 'feature', 'thickness', 'width', 'weight', 'deliveryDate'];
-    dataToPrint = filterData(dataToPrint, purchaseOrderListState.searchTerm, searchableKeys);
-    sortData(dataToPrint, purchaseOrderListState.sortKey, purchaseOrderListState.sortDir);
-
     // 2. Build the table rows with the new combined column
     const tableRows = dataToPrint.map(po => `
         <tr>
@@ -10041,8 +10222,6 @@ function printPurchaseOrders() {
             </tbody>
         </table>`;
 
-    // --- END OF CHANGE ---
-
     const printArea = document.getElementById('print-area');
     printArea.innerHTML = `
         <h2 style="text-align: center;">لیست سفارشات خرید در راه</h2>
@@ -10059,7 +10238,7 @@ function printPurchaseOrders() {
                 size: A4 portrait;
                 margin: 15mm;
             }
-            .print-table { /* Ensure the table in the print area uses the correct styles */
+            .print-table {
                 font-size: 0.9em;
             }
             .print-table th, .print-table td {
@@ -10115,4 +10294,3 @@ function setupFixedContainerSizing() {
 </script>
 </body>
 </html>
-
