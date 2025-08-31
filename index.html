@@ -1687,7 +1687,7 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 6.7.8
+// SCRIPT VERSION: 6.7.9
 // Author: Saeed Golestani
 // Date: 2024-09-07
 // Changes:
@@ -1699,12 +1699,12 @@
 //    saved as `undefined`. Ensured the correct value is always read from the form.
 // 3. (REFACTOR) Streamlined the interaction between the shortage calculation
 //    and the display filters for better reliability.
-// 4. (VERSION) Version updated to 6.7.8.
+// 4. (VERSION) Version updated to 6.7.9.
 // =================================================================================
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '6.7.8';
+const APP_VERSION = '6.7.9';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -2431,7 +2431,7 @@ function buildPageHTML() {
             </div>
             <div class="list-section">
                 <div class="section-header">
-                    <h2>لیست کویل‌ها</h2>
+                     <h2>لیست کویل‌ها <span id="coilCount" style="font-size: 0.8em; color: red;"></span></h2> <!-- این خط جدید است -->
                     <div class="io-buttons">
                         <button id="btnUpdateFromRahkaran" class="btn btn-info" disabled>موجودی راهکاران</button>
                         <button id="btnImportCoils" class="btn btn-primary">ورود از Excel</button>
@@ -5430,7 +5430,7 @@ function renderCoilList() {
         rahkaranBtn.disabled = coils.length === 0;
     }
     
-    // START OF CHANGE: Handle the main empty state for the entire coil list
+    // نمایش حالت خالی بودن لیست کویل‌ها
     if (coils.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -5439,11 +5439,23 @@ function renderCoilList() {
                 <p>برای شروع، لطفاً اطلاعات اولین کویل خود را از فرم "مرحله ۱" وارد کرده یا از طریق فایل اکسل وارد نمایید.</p>
                 <button class="btn btn-primary" onclick="document.getElementById('coilType').focus();">افزودن اولین کویل</button>
             </div>`;
+        
+        // به‌روزرسانی نمایش تعداد کویل‌ها در حالت خالی
+        const coilCountElement = document.getElementById('coilCount');
+        if (coilCountElement) {
+            coilCountElement.textContent = `(0 کویل)`;
+        }
         return;
     }
-    // END OF CHANGE
 
+    // دریافت کویل‌های قابل نمایش پس از فیلتر و مرتب‌سازی
     const displayCoils = getVisibleCoils();
+
+    // به‌روزرسانی نمایش تعداد کویل‌ها
+    const coilCountElement = document.getElementById('coilCount');
+    if (coilCountElement) {
+        coilCountElement.textContent = `(${displayCoils.length} کویل)`;
+    }
 
     const controlsHTML = `
         <div class="table-controls" data-list-id="coilList">
@@ -5460,7 +5472,6 @@ function renderCoilList() {
         </div>`;
     
     let tableHTML;
-    // START OF CHANGE: Handle empty state after a search
     if (displayCoils.length === 0) {
         tableHTML = `
             <div class="empty-state">
@@ -5468,29 +5479,39 @@ function renderCoilList() {
                 <h3>نتیجه‌ای یافت نشد</h3>
                 <p>هیچ کویلی با عبارت جستجوی "${coilListState.searchTerm}" مطابقت ندارد. لطفاً عبارت دیگری را امتحان کنید.</p>
             </div>`;
-    } 
-    // END OF CHANGE
-    else {
+    } else {
         const tableRows = displayCoils.map(coil => {
-                const displayCode = (coil.companyCode && coil.companyCode.length === 8) ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>` : coil.companyCode; 
-				const isActive = coil.id === selectedCoilId;
-				return `<tr data-id="${coil.id}" class="${isActive ? 'active-coil' : ''}">
-							<td>${displayCode}</td>
-							<td>${coil.type}</td>
-							<td>${coil.feature || '-'}</td>
-							<td>${coil.originalWeight}</td>
-							<td>${coil.width}</td>
-							<td>${coil.thickness}</td>
-							<td class="operations-cell">
-								<button class="btn btn-warning" data-action="edit" data-id="${coil.id}">ویرایش</button>
-								<button class="btn btn-danger" data-action="delete" data-id="${coil.id}">حذف</button>
-							</td>
-						</tr>`;
-				}).join('');
+            const displayCode = (coil.companyCode && coil.companyCode.length === 8) 
+                ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>` 
+                : coil.companyCode; 
+            const isActive = coil.id === selectedCoilId;
+            return `<tr data-id="${coil.id}" class="${isActive ? 'active-coil' : ''}">
+                        <td>${displayCode}</td>
+                        <td>${coil.type}</td>
+                        <td>${coil.feature || '-'}</td>
+                        <td>${coil.originalWeight}</td>
+                        <td>${coil.width}</td>
+                        <td>${coil.thickness}</td>
+                        <td class="operations-cell">
+                            <button class="btn btn-warning" data-action="edit" data-id="${coil.id}">ویرایش</button>
+                            <button class="btn btn-danger" data-action="delete" data-id="${coil.id}">حذف</button>
+                        </td>
+                    </tr>`;
+        }).join('');
         tableHTML = `
             <div class="table-scroll-wrapper">
                 <table>
-                    <thead><tr><th>کد انبار</th><th>نوع</th><th>ویژگی</th><th>وزن (ک.گ)</th><th>عرض (م.م)</th><th>ضخامت (م.م)</th><th class="print-hide">عملیات</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>کد انبار</th>
+                            <th>نوع</th>
+                            <th>ویژگی</th>
+                            <th>وزن (ک.گ)</th>
+                            <th>عرض (م.م)</th>
+                            <th>ضخامت (م.م)</th>
+                            <th class="print-hide">عملیات</th>
+                        </tr>
+                    </thead>
                     <tbody>${tableRows}</tbody>
                 </table>
             </div>`;
